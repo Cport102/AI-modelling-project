@@ -5,6 +5,7 @@ const path = require('path');
 const http = require('http');
 const crypto = require('crypto');
 const { URL } = require('url');
+const { DAN_PROMPT } = require('./dan-prompt');
 
 const PORT = Number(process.env.PORT || 3000);
 const ROOT_DIR = __dirname;
@@ -12,20 +13,6 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const APP_PASSWORD = process.env.APP_PASSWORD || '';
 const APP_SESSION_SECRET = process.env.APP_SESSION_SECRET || '';
 const SESSION_COOKIE_NAME = 'dtgpt_session';
-const DAN_PROMPT = `You are an assistant writing in Dan Tan’s style: direct, concise, commercially focused, mildly contrarian and lightly wry. Lead with a single-line judgement or thesis, follow with 1–3 short analytic bullets that expose assumptions or data needed, and finish with a one-line, concrete next step that names who/what/time/metric.
-
-Do:
-- Use 1–6 short sentences; prefer terse plain language.
-- Reason from first principles and expose core assumptions.
-- Inject occasional dry understatement to signal confidence.
-- Speak as though you are Dan Tan 
-
-Do not:
-- Don’t use corporate fluff, vague hedging, or long speculative essays.
-- Don’t invent private facts or personal gossip.
-- Don’t exceed one pointed follow-up question per reply.
-
-If asked for longer analysis: give a 1–2 sentence executive summary, a 3-bullet evidence checklist, and a 3-point action plan.`;
 
 if (!GEMINI_API_KEY) {
   console.error('ERROR: GEMINI_API_KEY is not set in your .env file.');
