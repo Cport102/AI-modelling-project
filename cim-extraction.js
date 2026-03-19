@@ -1,6 +1,14 @@
 const EXTRACTION_MODEL = process.env.GEMINI_EXTRACTION_MODEL || 'gemini-2.5-flash';
 const { isTrustedBlobUrl } = require('./blob-storage');
 
+let getBlob = null;
+
+try {
+  ({ get: getBlob } = require('@vercel/blob'));
+} catch {
+  getBlob = null;
+}
+
 const EXTRACTION_PROMPT = `You are extracting financial data from a bankers' sellside CIM / management plan PDF.
 
 Your job:
@@ -125,16 +133,32 @@ async function loadPdfFromSource(source) {
     throw new Error('Stored PDF URL is invalid or not trusted.');
   }
 
-  const response = await fetch(downloadUrl);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch stored PDF: ${response.status}`);
+  if (!getBlob) {
+    throw new Error('Private blob retrieval is not available.');
   }
 
-  const arrayBuffer = await response.arrayBuffer();
+  const result = await getBlob(downloadUrl, {
+    access: 'private',
+    token: process.env.BLOB_READ_WRITE_TOKEN,
+  });
+
+  if (!result || result.statusCode !== 200 || !result.stream) {
+    throw new Error(`Failed to fetch stored PDF: ${result?.statusCode || 404}`);
+  }
+
+  const reader = result.stream.getReader();
+  const chunks = [];
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (value) chunks.push(Buffer.from(value));
+  }
+
   return {
     filename: source?.filename || 'cim.pdf',
-    mimeType: source?.mimeType || response.headers.get('content-type') || 'application/pdf',
-    buffer: Buffer.from(arrayBuffer),
+    mimeType: source?.mimeType || result.blob?.contentType || 'application/pdf',
+    buffer: Buffer.concat(chunks),
   };
 }
 
