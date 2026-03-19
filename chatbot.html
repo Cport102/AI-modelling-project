@@ -1059,6 +1059,7 @@ const HEALTH_ENDPOINT = (window.location.protocol === 'http:' || window.location
   : 'http://localhost:3000/api/health';
 const USE_DIRECT_CIM_UPLOAD = !['localhost', '127.0.0.1'].includes(window.location.hostname);
 const MAX_CIM_UPLOAD_BYTES = 100 * 1024 * 1024;
+const SERVER_FALLBACK_MAX_BYTES = 4 * 1024 * 1024;
 
 // ═══════════════════════════════════════════════
 //  DOM REFERENCES
@@ -1394,6 +1395,14 @@ async function extractUploadedCimLocally(file) {
   return payload;
 }
 
+function getCimUploadFallbackMessage(file) {
+  if (file.size > SERVER_FALLBACK_MAX_BYTES) {
+    return 'Your network blocked the direct upload path. This fallback only supports PDFs up to 4 MB on Vercel. Try a smaller PDF or another network.';
+  }
+
+  return '';
+}
+
 async function handleCimFile(file) {
   resetCimResults();
   setCimError('');
@@ -1422,10 +1431,21 @@ async function handleCimFile(file) {
     let payload;
 
     if (USE_DIRECT_CIM_UPLOAD) {
-      const blob = await uploadCimToBlob(file);
-      clearTimeout(cimStatusTimeout);
-      setCimStatus('Extracting financial data...');
-      payload = await extractStoredCim(blob);
+      try {
+        const blob = await uploadCimToBlob(file);
+        clearTimeout(cimStatusTimeout);
+        setCimStatus('Extracting financial data...');
+        payload = await extractStoredCim(blob);
+      } catch (uploadError) {
+        const fallbackMessage = getCimUploadFallbackMessage(file);
+        if (!fallbackMessage) {
+          clearTimeout(cimStatusTimeout);
+          setCimStatus('Direct upload blocked. Retrying via server fallback...');
+          payload = await extractUploadedCimLocally(file);
+        } else {
+          throw new Error(fallbackMessage);
+        }
+      }
     } else {
       payload = await extractUploadedCimLocally(file);
       clearTimeout(cimStatusTimeout);
