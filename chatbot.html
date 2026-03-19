@@ -162,6 +162,179 @@
 
     .icon-btn svg { width: 18px; height: 18px; }
 
+    #cim-section {
+      padding: 18px 20px 8px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    #cim-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    #cim-card h2 {
+      font-size: 16px;
+      margin-bottom: 12px;
+    }
+
+    #cim-dropzone {
+      border: 1.5px dashed var(--border);
+      border-radius: 16px;
+      padding: 22px 18px;
+      text-align: center;
+      background: var(--surface-hover);
+      transition: border-color .15s, background .15s, transform .15s;
+      cursor: pointer;
+    }
+
+    #cim-dropzone.dragover {
+      border-color: var(--accent);
+      background: rgba(217,119,87,.08);
+      transform: translateY(-1px);
+    }
+
+    #cim-dropzone strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
+
+    #cim-dropzone span {
+      display: block;
+      font-size: 12.5px;
+      color: var(--text-muted);
+    }
+
+    #cim-file-input {
+      display: none;
+    }
+
+    #cim-status,
+    #cim-error,
+    #cim-meta {
+      margin-top: 12px;
+      font-size: 13px;
+    }
+
+    #cim-status,
+    #cim-meta {
+      color: var(--text-muted);
+    }
+
+    #cim-error {
+      display: none;
+      color: #b91c1c;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+
+    #cim-error.visible {
+      display: block;
+    }
+
+    #cim-results {
+      display: none;
+      margin-top: 16px;
+      border-top: 1px solid var(--border);
+      padding-top: 16px;
+    }
+
+    #cim-results.visible {
+      display: block;
+    }
+
+    .cim-results-grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .cim-result-block {
+      background: var(--surface-hover);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 14px;
+    }
+
+    .cim-result-block h3 {
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+
+    .cim-result-block ul {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    .cim-result-block li + li {
+      margin-top: 4px;
+    }
+
+    #cim-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .secondary-btn {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 12.5px;
+      cursor: pointer;
+    }
+
+    .secondary-btn:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+    }
+
+    #cim-table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      margin-top: 14px;
+    }
+
+    #cim-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+      background: var(--surface);
+    }
+
+    #cim-table th,
+    #cim-table td {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+      white-space: nowrap;
+    }
+
+    #cim-table th {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      background: var(--surface-hover);
+      position: sticky;
+      top: 0;
+    }
+
+    #cim-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
     /* ─── Chat Thread ────────────────────────────────────────────────────── */
     #messages {
       flex: 1;
@@ -520,6 +693,7 @@
     /* ─── Mobile ─────────────────────────────────────────────────────────── */
     @media (max-width: 600px) {
       #app { max-width: 100%; }
+      #cim-section { padding: 14px 14px 6px; }
       #messages { padding: 16px 14px; }
       #input-area { padding: 10px 14px 16px; }
       #header { padding: 10px 14px; }
@@ -583,6 +757,59 @@
       </button>
     </div>
   </header>
+
+  <section id="cim-section" aria-label="CIM extraction">
+    <div id="cim-card">
+      <h2>Upload CIM here for data extraction</h2>
+      <div id="cim-dropzone" role="button" tabindex="0" aria-label="Upload CIM PDF">
+        <strong>Drag and drop a PDF here</strong>
+        <span>or click to choose a bankers' sellside plan / CIM PDF</span>
+      </div>
+      <input id="cim-file-input" type="file" accept=".pdf,application/pdf" />
+      <div id="cim-status" aria-live="polite"></div>
+      <div id="cim-error" role="alert"></div>
+      <div id="cim-meta"></div>
+
+      <div id="cim-results">
+        <div class="cim-results-grid">
+          <div class="cim-result-block">
+            <h3>Warnings</h3>
+            <ul id="cim-warnings"></ul>
+          </div>
+          <div class="cim-result-block">
+            <h3>Assumptions</h3>
+            <ul id="cim-assumptions"></ul>
+          </div>
+        </div>
+
+        <div id="cim-actions">
+          <button class="secondary-btn" id="cim-copy-json-btn" disabled>Copy JSON</button>
+          <button class="secondary-btn" id="cim-download-csv-btn" disabled>Download CSV</button>
+          <button class="secondary-btn" id="cim-send-chat-btn" disabled>Send to chat</button>
+        </div>
+
+        <div id="cim-table-wrap">
+          <table id="cim-table">
+            <thead>
+              <tr>
+                <th>Period</th>
+                <th>Type</th>
+                <th>Revenue</th>
+                <th>Gross Profit</th>
+                <th>EBITDA</th>
+                <th>Currency</th>
+                <th>Units</th>
+                <th>Source Page</th>
+                <th>Confidence</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody id="cim-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
 
   <!-- Messages thread -->
   <div id="messages" role="log" aria-live="polite" aria-label="Conversation">
@@ -658,6 +885,9 @@ let isStreaming   = false;
 const API_ENDPOINT = (window.location.protocol === 'http:' || window.location.protocol === 'https:')
   ? '/api/chat'
   : 'http://localhost:3000/api/chat';
+const EXTRACTION_ENDPOINT = (window.location.protocol === 'http:' || window.location.protocol === 'https:')
+  ? '/api/extract-cim'
+  : 'http://localhost:3000/api/extract-cim';
 const HEALTH_ENDPOINT = (window.location.protocol === 'http:' || window.location.protocol === 'https:')
   ? '/api/health'
   : 'http://localhost:3000/api/health';
@@ -666,6 +896,18 @@ const HEALTH_ENDPOINT = (window.location.protocol === 'http:' || window.location
 //  DOM REFERENCES
 // ═══════════════════════════════════════════════
 const $ = id => document.getElementById(id);
+const cimDropzone = $('cim-dropzone');
+const cimFileInput = $('cim-file-input');
+const cimStatus = $('cim-status');
+const cimError = $('cim-error');
+const cimMeta = $('cim-meta');
+const cimResults = $('cim-results');
+const cimWarnings = $('cim-warnings');
+const cimAssumptions = $('cim-assumptions');
+const cimTableBody = $('cim-table-body');
+const cimCopyJsonBtn = $('cim-copy-json-btn');
+const cimDownloadCsvBtn = $('cim-download-csv-btn');
+const cimSendChatBtn = $('cim-send-chat-btn');
 const messagesEl  = $('messages');
 const welcomeEl   = $('welcome');
 const typingEl    = $('typing-indicator');
@@ -680,6 +922,8 @@ const newChatBtn  = $('new-chat-btn');
 const themeBtn    = $('theme-btn');
 const iconSun     = $('icon-sun');
 const iconMoon    = $('icon-moon');
+let cimExtractionResult = null;
+let cimStatusTimeout = null;
 
 // ═══════════════════════════════════════════════
 //  THEME
@@ -766,6 +1010,181 @@ function copyCode(btn) {
       btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy`;
     }, 2000);
   });
+}
+
+function setCimStatus(message) {
+  cimStatus.textContent = message || '';
+}
+
+function setCimError(message) {
+  cimError.textContent = message || '';
+  cimError.classList.toggle('visible', Boolean(message));
+}
+
+function resetCimResults() {
+  cimExtractionResult = null;
+  cimResults.classList.remove('visible');
+  cimMeta.textContent = '';
+  cimWarnings.innerHTML = '';
+  cimAssumptions.innerHTML = '';
+  cimTableBody.innerHTML = '';
+  cimCopyJsonBtn.disabled = true;
+  cimDownloadCsvBtn.disabled = true;
+  cimSendChatBtn.disabled = true;
+}
+
+function renderStringList(listEl, values, emptyText) {
+  const items = Array.isArray(values) && values.length ? values : [emptyText];
+  listEl.innerHTML = items.map(value => `<li>${escapeHtml(String(value))}</li>`).join('');
+}
+
+function formatCellValue(value) {
+  if (value === null || value === undefined || value === '') return '—';
+  if (typeof value === 'number') return Number.isInteger(value) ? String(value) : value.toFixed(2);
+  return String(value);
+}
+
+function renderCimTable(rows) {
+  cimTableBody.innerHTML = rows.map(row => `
+    <tr>
+      <td>${escapeHtml(formatCellValue(row.period_label))}</td>
+      <td>${escapeHtml(formatCellValue(row.type))}</td>
+      <td>${escapeHtml(formatCellValue(row.revenue))}</td>
+      <td>${escapeHtml(formatCellValue(row.gross_profit))}</td>
+      <td>${escapeHtml(formatCellValue(row.ebitda))}</td>
+      <td>${escapeHtml(formatCellValue(row.currency))}</td>
+      <td>${escapeHtml(formatCellValue(row.units))}</td>
+      <td>${escapeHtml(formatCellValue(row.source_page))}</td>
+      <td>${escapeHtml(formatCellValue(row.confidence))}</td>
+      <td>${escapeHtml(formatCellValue(row.notes))}</td>
+    </tr>
+  `).join('');
+}
+
+function renderCimResults(result) {
+  cimExtractionResult = result;
+  cimResults.classList.add('visible');
+  cimCopyJsonBtn.disabled = false;
+  cimDownloadCsvBtn.disabled = false;
+  cimSendChatBtn.disabled = false;
+
+  const structured = result.structured || {};
+  const metaParts = [
+    structured.company_name,
+    structured.source_table_name,
+    structured.currency ? `Currency: ${structured.currency}` : '',
+    structured.units ? `Units: ${structured.units}` : '',
+  ].filter(Boolean);
+  cimMeta.textContent = metaParts.join(' · ');
+
+  renderStringList(cimWarnings, structured.warnings, 'No warnings returned.');
+  renderStringList(cimAssumptions, structured.assumptions, 'No assumptions returned.');
+  renderCimTable(result.rows || []);
+}
+
+function buildCsv(rows) {
+  const header = ['Period','Type','Revenue','Gross Profit','EBITDA','Currency','Units','Source Page','Confidence','Notes'];
+  const lines = [header];
+
+  for (const row of rows) {
+    lines.push([
+      row.period_label,
+      row.type,
+      row.revenue,
+      row.gross_profit,
+      row.ebitda,
+      row.currency,
+      row.units,
+      row.source_page,
+      row.confidence,
+      row.notes,
+    ]);
+  }
+
+  return lines.map(line => line.map(value => {
+    const cell = value === null || value === undefined ? '' : String(value);
+    return `"${cell.replace(/"/g, '""')}"`;
+  }).join(',')).join('\n');
+}
+
+function downloadCimCsv() {
+  if (!cimExtractionResult?.rows?.length) return;
+  const csv = buildCsv(cimExtractionResult.rows);
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'cim-extraction.csv';
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function sendCimSummaryToChat() {
+  if (!cimExtractionResult?.rows?.length) return;
+
+  const lines = [
+    'Please analyze this extracted CIM financial data:',
+    ...cimExtractionResult.rows.map(row =>
+      `${row.type} ${row.period_label}: Revenue=${formatCellValue(row.revenue)}, Gross Profit=${formatCellValue(row.gross_profit)}, EBITDA=${formatCellValue(row.ebitda)}, Currency=${formatCellValue(row.currency)}, Units=${formatCellValue(row.units)}`
+    ),
+  ];
+
+  if (cimExtractionResult.structured?.warnings?.length) {
+    lines.push(`Warnings: ${cimExtractionResult.structured.warnings.join(' | ')}`);
+  }
+
+  userInput.value = lines.join('\n');
+  userInput.dispatchEvent(new Event('input', { bubbles: true }));
+  userInput.focus();
+}
+
+async function handleCimFile(file) {
+  resetCimResults();
+  setCimError('');
+
+  if (!file) {
+    setCimError('Please choose a PDF file.');
+    return;
+  }
+
+  const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+  if (!isPdf) {
+    setCimError('Only PDF files are supported.');
+    return;
+  }
+
+  setCimStatus('Uploading PDF...');
+  clearTimeout(cimStatusTimeout);
+  cimStatusTimeout = setTimeout(() => setCimStatus('Extracting financial data...'), 900);
+
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(EXTRACTION_ENDPOINT, {
+      method: 'POST',
+      body: formData,
+    });
+
+    clearTimeout(cimStatusTimeout);
+
+    if (response.status === 401) {
+      window.location.href = '/login.html';
+      return;
+    }
+
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(payload.error || 'CIM extraction failed.');
+    }
+
+    setCimStatus('Extraction complete.');
+    renderCimResults(payload);
+  } catch (error) {
+    clearTimeout(cimStatusTimeout);
+    setCimStatus('');
+    setCimError(error.message || 'CIM extraction failed.');
+  }
 }
 
 // ═══════════════════════════════════════════════
@@ -1036,6 +1455,51 @@ sendBtn.addEventListener('click', sendMessage);
 
 stopBtn.addEventListener('click', () => {
   if (abortCtrl) abortCtrl.abort();
+});
+
+cimDropzone.addEventListener('click', () => cimFileInput.click());
+cimDropzone.addEventListener('keydown', event => {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    cimFileInput.click();
+  }
+});
+
+cimDropzone.addEventListener('dragover', event => {
+  event.preventDefault();
+  cimDropzone.classList.add('dragover');
+});
+
+cimDropzone.addEventListener('dragleave', () => {
+  cimDropzone.classList.remove('dragover');
+});
+
+cimDropzone.addEventListener('drop', event => {
+  event.preventDefault();
+  cimDropzone.classList.remove('dragover');
+  const file = event.dataTransfer?.files?.[0];
+  handleCimFile(file);
+});
+
+cimFileInput.addEventListener('change', event => {
+  handleCimFile(event.target.files?.[0]);
+  cimFileInput.value = '';
+});
+
+cimCopyJsonBtn.addEventListener('click', async () => {
+  if (!cimExtractionResult) return;
+  await navigator.clipboard.writeText(JSON.stringify(cimExtractionResult.structured, null, 2));
+  setCimStatus('Structured JSON copied.');
+});
+
+cimDownloadCsvBtn.addEventListener('click', () => {
+  downloadCimCsv();
+  setCimStatus('CSV download started.');
+});
+
+cimSendChatBtn.addEventListener('click', () => {
+  sendCimSummaryToChat();
+  setCimStatus('Extraction summary copied into the chat input.');
 });
 
 logoutBtn.addEventListener('click', async () => {

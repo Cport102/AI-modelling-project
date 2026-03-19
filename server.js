@@ -6,6 +6,8 @@ const http = require('http');
 const crypto = require('crypto');
 const { URL } = require('url');
 const { DAN_PROMPT } = require('./dan-prompt');
+const { parseMultipartPdf } = require('./multipart-parser');
+const { extractCimDataFromPdf } = require('./cim-extraction');
 
 const PORT = Number(process.env.PORT || 3000);
 const ROOT_DIR = __dirname;
@@ -30,6 +32,7 @@ const MIME_TYPES = {
 
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 20;
+const EXTRACTION_RATE_LIMIT_MAX_REQUESTS = 10;
 const rateLimitStore = new Map();
 const SECURITY_HEADERS = {
   'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data:; connect-src 'self'; font-src 'self' https://cdnjs.cloudflare.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'",
@@ -138,25 +141,26 @@ function getClientIp(req) {
   return req.socket?.remoteAddress || 'unknown';
 }
 
-function enforceRateLimit(req, res) {
+function enforceRateLimit(req, res, maxRequests = RATE_LIMIT_MAX_REQUESTS) {
   const now = Date.now();
   const ip = getClientIp(req);
   const windowStart = now - RATE_LIMIT_WINDOW_MS;
-  const recentHits = (rateLimitStore.get(ip) || []).filter(timestamp => timestamp > windowStart);
+  const storeKey = `${ip}:${maxRequests}`;
+  const recentHits = (rateLimitStore.get(storeKey) || []).filter(timestamp => timestamp > windowStart);
 
-  if (recentHits.length >= RATE_LIMIT_MAX_REQUESTS) {
+  if (recentHits.length >= maxRequests) {
     const retryAfterSeconds = Math.ceil((recentHits[0] + RATE_LIMIT_WINDOW_MS - now) / 1000);
     res.setHeader('Retry-After', String(retryAfterSeconds));
-    res.setHeader('X-RateLimit-Limit', String(RATE_LIMIT_MAX_REQUESTS));
+    res.setHeader('X-RateLimit-Limit', String(maxRequests));
     res.setHeader('X-RateLimit-Remaining', '0');
     sendJson(res, 429, { error: 'Rate limit exceeded. Try again later.' });
     return false;
   }
 
   recentHits.push(now);
-  rateLimitStore.set(ip, recentHits);
-  res.setHeader('X-RateLimit-Limit', String(RATE_LIMIT_MAX_REQUESTS));
-  res.setHeader('X-RateLimit-Remaining', String(Math.max(0, RATE_LIMIT_MAX_REQUESTS - recentHits.length)));
+  rateLimitStore.set(storeKey, recentHits);
+  res.setHeader('X-RateLimit-Limit', String(maxRequests));
+  res.setHeader('X-RateLimit-Remaining', String(Math.max(0, maxRequests - recentHits.length)));
   return true;
 }
 
@@ -290,6 +294,29 @@ async function handleChat(req, res) {
   }
 }
 
+async function handleCimExtraction(req, res) {
+  if (!isAllowedOrigin(req)) {
+    sendJson(res, 403, { error: 'Origin not allowed.' });
+    return;
+  }
+
+  try {
+    const file = await parseMultipartPdf(req);
+    const result = await extractCimDataFromPdf(file);
+    sendJson(res, 200, result);
+  } catch (error) {
+    const message = error?.message || 'CIM extraction failed.';
+    const statusCode =
+      /No file uploaded|Only PDF files|Content-Type must be multipart|Missing multipart boundary|Uploaded file exceeds/.test(message)
+        ? 400
+        : /No financial rows could be extracted|Gemini returned invalid JSON|Model response was not a JSON object/.test(message)
+          ? 422
+          : 500;
+
+    sendJson(res, statusCode, { error: message });
+  }
+}
+
 function handleLogin(req, res) {
   if (!isAllowedOrigin(req)) {
     sendJson(res, 403, { error: 'Origin not allowed.' });
@@ -352,6 +379,25 @@ const server = http.createServer(async (req, res) => {
     }
 
     await handleChat(req, res);
+    return;
+  }
+
+  if (pathname === '/api/extract-cim') {
+    if (req.method !== 'POST') {
+      sendJson(res, 405, { error: 'Method not allowed' });
+      return;
+    }
+
+    if (!isAuthenticated(req)) {
+      sendJson(res, 401, { error: 'Authentication required.' });
+      return;
+    }
+
+    if (!enforceRateLimit(req, res, EXTRACTION_RATE_LIMIT_MAX_REQUESTS)) {
+      return;
+    }
+
+    await handleCimExtraction(req, res);
     return;
   }
 
