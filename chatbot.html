@@ -70,9 +70,79 @@
     #app {
       display: flex;
       flex-direction: column;
-      height: 100vh;
-      max-width: 720px;
+      max-width: 860px;
       margin: 0 auto;
+      padding: 24px 18px 32px;
+    }
+
+    .tab-ribbon {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 16px;
+      padding: 6px;
+      border-radius: 999px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+    }
+
+    .tab-ribbon button {
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      padding: 10px 16px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background .15s, color .15s;
+    }
+
+    .tab-ribbon button.active {
+      background: linear-gradient(135deg, var(--accent), #e7b39f);
+      color: #fff;
+      box-shadow: var(--shadow);
+    }
+
+    .tab-ribbon button:hover:not(.active) {
+      background: var(--surface-hover);
+      color: var(--text);
+    }
+
+    .view-panel {
+      display: block;
+    }
+
+    .view-panel.hidden {
+      display: none;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .section-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    #chat-ribbon { order: 1; }
+    #header { order: 2; }
+    #chat-intro { order: 3; }
+    #messages { order: 4; }
+    #error-banner { order: 5; }
+    #input-area { order: 6; }
+    #modelling-ribbon { order: 7; }
+    #cim-section { order: 8; }
+
+    #modelling-ribbon {
+      margin-top: 28px;
     }
 
     /* ─── Header ────────────────────────────────────────────────────────── */
@@ -83,11 +153,11 @@
       padding: 12px 20px;
       background: var(--surface);
       border-bottom: 1px solid var(--border);
+      border: 1px solid var(--border);
+      border-bottom: none;
+      border-radius: 22px 22px 0 0;
       gap: 12px;
       flex-shrink: 0;
-      position: sticky;
-      top: 0;
-      z-index: 10;
     }
 
     #header-left {
@@ -162,18 +232,75 @@
 
     .icon-btn svg { width: 18px; height: 18px; }
 
-    #cim-section {
-      padding: 18px 20px 8px;
-      background: var(--bg);
+    #chat-intro {
+      display: grid;
+      justify-items: center;
+      gap: 16px;
+      padding: 40px 20px 28px;
+      text-align: center;
+      border-left: 1px solid var(--border);
+      border-right: 1px solid var(--border);
       border-bottom: 1px solid var(--border);
+      background:
+        radial-gradient(circle at top, rgba(217,119,87,.10), transparent 48%),
+        var(--surface);
+    }
+
+    #chat-intro .big-logo {
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 2px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 30% 25%, rgba(255,255,255,.85), rgba(255,255,255,0) 38%),
+        linear-gradient(180deg, rgba(217,119,87,.18), rgba(217,119,87,.04));
+      box-shadow: 0 18px 36px rgba(217,119,87,.16);
+    }
+
+    #chat-intro .big-logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      object-position: center;
+    }
+
+    #chat-intro-title {
+      font-size: 42px;
+      font-weight: 700;
+      line-height: 1;
+      font-family: inherit;
+    }
+
+    #chat-intro h2 {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    #chat-intro p {
+      max-width: 460px;
+      font-size: 15px;
+      line-height: 1.7;
+      color: var(--text-muted);
+    }
+
+    #cim-section {
+      padding: 0;
+      background: transparent;
+      border-bottom: none;
       flex-shrink: 0;
+      margin-top: 0;
     }
 
     #cim-card {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 18px;
-      padding: 18px;
+      border-radius: 22px;
+      padding: 20px;
       box-shadow: var(--shadow);
     }
 
@@ -337,12 +464,16 @@
 
     /* ─── Chat Thread ────────────────────────────────────────────────────── */
     #messages {
-      flex: 1;
+      height: 220px;
+      min-height: 140px;
       overflow-y: auto;
       padding: 24px 20px;
       display: flex;
       flex-direction: column;
       gap: 20px;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      border-right: 1px solid var(--border);
     }
 
     /* Welcome / empty state */
@@ -598,10 +729,12 @@
       border: 1px solid #fecaca;
       color: #b91c1c;
       padding: 10px 16px;
-      margin: 0 20px;
+      margin: 0;
       border-radius: 10px;
       font-size: 13.5px;
       flex-shrink: 0;
+      border-left-width: 0;
+      border-right-width: 0;
     }
 
     [data-theme="dark"] #error-banner {
@@ -616,8 +749,11 @@
     /* ─── Input Bar ──────────────────────────────────────────────────────── */
     #input-area {
       padding: 12px 20px 20px;
-      background: var(--bg);
+      background: var(--surface);
       flex-shrink: 0;
+      border: 1px solid var(--border);
+      border-top: none;
+      border-radius: 0 0 22px 22px;
     }
 
     #input-box {
@@ -693,10 +829,16 @@
     /* ─── Mobile ─────────────────────────────────────────────────────────── */
     @media (max-width: 600px) {
       #app { max-width: 100%; }
-      #cim-section { padding: 14px 14px 6px; }
+      #app { padding: 14px 10px 22px; }
+      .tab-ribbon { margin-bottom: 14px; }
+      #chat-intro { padding: 28px 16px 22px; }
+      #chat-intro-title { font-size: 32px; }
+      #chat-intro .big-logo { width: 132px; height: 132px; }
+      #cim-section { padding: 0; }
       #messages { padding: 16px 14px; }
       #input-area { padding: 10px 14px 16px; }
       #header { padding: 10px 14px; }
+      #messages { height: 160px; min-height: 96px; }
     }
   </style>
 </head>
@@ -707,10 +849,16 @@
 ════════════════════════════════════════════════ -->
 <div id="app">
 
+  <div class="tab-ribbon" role="tablist" aria-label="Primary views">
+    <button id="chat-tab" type="button" class="active" role="tab" aria-selected="true" aria-controls="chat-view">Chat</button>
+    <button id="modelling-tab" type="button" role="tab" aria-selected="false" aria-controls="modelling-view">Modelling</button>
+  </div>
+
+  <section id="chat-view" class="view-panel" role="tabpanel" aria-labelledby="chat-tab">
   <!-- Header -->
   <header id="header">
     <div id="header-left">
-      <div class="assistant-logo" style="overflow:hidden;"><img src="Dan Tan.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="DTGPT" /></div>
+      <div class="assistant-logo" style="overflow:hidden;"><img src="Dan Tan.png" style="width:80%;height:80%;object-fit:cover;border-radius:50%;" alt="DTGPT" /></div>
       <h1>DTGPT</h1>
       <!-- Model selector -->
       <select id="model-select" title="Select model" aria-label="Select model">
@@ -758,64 +906,22 @@
     </div>
   </header>
 
-  <section id="cim-section" aria-label="CIM extraction">
-    <div id="cim-card">
-      <h2>Upload CIM here for data extraction</h2>
-      <div id="cim-dropzone" role="button" tabindex="0" aria-label="Upload CIM PDF">
-        <strong>Drag and drop a PDF here</strong>
-        <span>or click to choose a bankers' sellside plan / CIM PDF</span>
-      </div>
-      <input id="cim-file-input" type="file" accept=".pdf,application/pdf" />
-      <div id="cim-status" aria-live="polite"></div>
-      <div id="cim-error" role="alert"></div>
-      <div id="cim-meta"></div>
-
-      <div id="cim-results">
-        <div class="cim-results-grid">
-          <div class="cim-result-block">
-            <h3>Warnings</h3>
-            <ul id="cim-warnings"></ul>
-          </div>
-          <div class="cim-result-block">
-            <h3>Assumptions</h3>
-            <ul id="cim-assumptions"></ul>
-          </div>
-        </div>
-
-        <div id="cim-actions">
-          <button class="secondary-btn" id="cim-copy-json-btn" disabled>Copy JSON</button>
-          <button class="secondary-btn" id="cim-download-csv-btn" disabled>Download CSV</button>
-          <button class="secondary-btn" id="cim-send-chat-btn" disabled>Send to chat</button>
-        </div>
-
-        <div id="cim-table-wrap">
-          <table id="cim-table">
-            <thead>
-              <tr>
-                <th>Period</th>
-                <th>Type</th>
-                <th>Revenue</th>
-                <th>Gross Profit</th>
-                <th>EBITDA</th>
-                <th>Currency</th>
-                <th>Units</th>
-                <th>Source Page</th>
-                <th>Confidence</th>
-                <th>Notes</th>
-              </tr>
-            </thead>
-            <tbody id="cim-table-body"></tbody>
-          </table>
-        </div>
-      </div>
+  <section id="chat-intro" aria-label="Dan Tan GPT overview">
+    <div id="chat-intro-title">
+      <span style="color:var(--accent);font-weight:800;">D</span><span style="font-size:0.7em;">an</span>
+      <span style="color:var(--accent);font-weight:800;">T</span><span style="font-size:0.7em;">an</span>
+      <span style="color:var(--accent);font-weight:800;">GPT</span>
     </div>
+    <div class="big-logo"><img src="Dan Tan.png" alt="DTGPT" /></div>
+    <h2>How can I help you today?</h2>
+    <p>Ask me anything. I’ll keep it direct, commercially sharp, and focused on what matters.</p>
   </section>
 
   <!-- Messages thread -->
   <div id="messages" role="log" aria-live="polite" aria-label="Conversation">
 
     <!-- Welcome screen (hidden once chat starts) -->
-    <div id="welcome">
+    <div id="welcome" style="display:none;">
       <div style="font-size:60px;font-weight:700;line-height:1;margin-bottom:8px;font-family:inherit;">
         <span style="color:var(--accent);font-weight:800;">D</span><span style="font-size:0.7em;">an</span>
         <span style="color:var(--accent);font-weight:800;">T</span><span style="font-size:0.7em;">an</span>
@@ -871,6 +977,63 @@
     <p class="input-hint">Enter to send · Shift+Enter for new line</p>
   </div>
 
+  </section>
+
+  <section id="modelling-view" class="view-panel hidden" role="tabpanel" aria-labelledby="modelling-tab">
+    <section id="cim-section" aria-label="CIM extraction">
+      <div id="cim-card">
+        <h2>Upload CIM here for data extraction</h2>
+        <div id="cim-dropzone" role="button" tabindex="0" aria-label="Upload CIM PDF">
+          <strong>Drag and drop a PDF here</strong>
+          <span>or click to choose a bankers' sellside plan / CIM PDF</span>
+        </div>
+        <input id="cim-file-input" type="file" accept=".pdf,application/pdf" />
+        <div id="cim-status" aria-live="polite"></div>
+        <div id="cim-error" role="alert"></div>
+        <div id="cim-meta"></div>
+
+        <div id="cim-results">
+          <div class="cim-results-grid">
+            <div class="cim-result-block">
+              <h3>Warnings</h3>
+              <ul id="cim-warnings"></ul>
+            </div>
+            <div class="cim-result-block">
+              <h3>Assumptions</h3>
+              <ul id="cim-assumptions"></ul>
+            </div>
+          </div>
+
+          <div id="cim-actions">
+            <button class="secondary-btn" id="cim-copy-json-btn" disabled>Copy JSON</button>
+            <button class="secondary-btn" id="cim-download-csv-btn" disabled>Download CSV</button>
+            <button class="secondary-btn" id="cim-send-chat-btn" disabled>Send to chat</button>
+          </div>
+
+          <div id="cim-table-wrap">
+            <table id="cim-table">
+              <thead>
+                <tr>
+                  <th>Period</th>
+                  <th>Type</th>
+                  <th>Revenue</th>
+                  <th>Gross Profit</th>
+                  <th>EBITDA</th>
+                  <th>Currency</th>
+                  <th>Units</th>
+                  <th>Source Page</th>
+                  <th>Confidence</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody id="cim-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </section>
+
 </div>
 
 <script>
@@ -888,14 +1051,23 @@ const API_ENDPOINT = (window.location.protocol === 'http:' || window.location.pr
 const EXTRACTION_ENDPOINT = (window.location.protocol === 'http:' || window.location.protocol === 'https:')
   ? '/api/extract-cim'
   : 'http://localhost:3000/api/extract-cim';
+const CIM_UPLOAD_ENDPOINT = (window.location.protocol === 'http:' || window.location.protocol === 'https:')
+  ? '/api/cim-upload'
+  : 'http://localhost:3000/api/cim-upload';
 const HEALTH_ENDPOINT = (window.location.protocol === 'http:' || window.location.protocol === 'https:')
   ? '/api/health'
   : 'http://localhost:3000/api/health';
+const USE_DIRECT_CIM_UPLOAD = !['localhost', '127.0.0.1'].includes(window.location.hostname);
+const MAX_CIM_UPLOAD_BYTES = 100 * 1024 * 1024;
 
 // ═══════════════════════════════════════════════
 //  DOM REFERENCES
 // ═══════════════════════════════════════════════
 const $ = id => document.getElementById(id);
+const chatTab = $('chat-tab');
+const modellingTab = $('modelling-tab');
+const chatView = $('chat-view');
+const modellingView = $('modelling-view');
 const cimDropzone = $('cim-dropzone');
 const cimFileInput = $('cim-file-input');
 const cimStatus = $('cim-status');
@@ -913,6 +1085,7 @@ const welcomeEl   = $('welcome');
 const typingEl    = $('typing-indicator');
 const errorBanner = $('error-banner');
 const errorMsg    = $('error-msg');
+const inputArea   = $('input-area');
 const userInput   = $('user-input');
 const sendBtn     = $('send-btn');
 const stopBtn     = $('stop-btn');
@@ -924,6 +1097,19 @@ const iconSun     = $('icon-sun');
 const iconMoon    = $('icon-moon');
 let cimExtractionResult = null;
 let cimStatusTimeout = null;
+
+function setActiveView(view) {
+  const showChat = view !== 'modelling';
+  chatTab.classList.toggle('active', showChat);
+  modellingTab.classList.toggle('active', !showChat);
+  chatTab.setAttribute('aria-selected', showChat ? 'true' : 'false');
+  modellingTab.setAttribute('aria-selected', showChat ? 'false' : 'true');
+  chatView.classList.toggle('hidden', !showChat);
+  modellingView.classList.toggle('hidden', showChat);
+  messagesEl.classList.toggle('hidden', !showChat);
+  errorBanner.classList.toggle('hidden', !showChat);
+  inputArea.classList.toggle('hidden', !showChat);
+}
 
 // ═══════════════════════════════════════════════
 //  THEME
@@ -1135,7 +1321,77 @@ function sendCimSummaryToChat() {
 
   userInput.value = lines.join('\n');
   userInput.dispatchEvent(new Event('input', { bubbles: true }));
+  setActiveView('chat');
   userInput.focus();
+}
+
+function sanitizeUploadFileName(filename) {
+  return (filename || 'cim.pdf')
+    .replace(/[^a-zA-Z0-9._-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+async function uploadCimToBlob(file) {
+  const { upload } = await import('https://esm.sh/@vercel/blob/client');
+  const safeName = sanitizeUploadFileName(file.name);
+
+  return upload(`cim-uploads/${Date.now()}-${safeName}`, file, {
+    access: 'private',
+    contentType: 'application/pdf',
+    handleUploadUrl: CIM_UPLOAD_ENDPOINT,
+    multipart: file.size > 5 * 1024 * 1024,
+    onUploadProgress: ({ percentage }) => {
+      setCimStatus(`Uploading PDF... ${Math.round(percentage)}%`);
+    },
+  });
+}
+
+async function extractStoredCim(blob) {
+  const response = await fetch(EXTRACTION_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      blobUrl: blob.url,
+      downloadUrl: blob.downloadUrl || blob.url,
+      filename: blob.pathname ? blob.pathname.split('/').pop() : 'cim.pdf',
+      mimeType: 'application/pdf',
+    }),
+  });
+
+  if (response.status === 401) {
+    window.location.href = '/login.html';
+    return null;
+  }
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(payload.error || 'CIM extraction failed.');
+  }
+
+  return payload;
+}
+
+async function extractUploadedCimLocally(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch(EXTRACTION_ENDPOINT, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (response.status === 401) {
+    window.location.href = '/login.html';
+    return null;
+  }
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(payload.error || 'CIM extraction failed.');
+  }
+
+  return payload;
 }
 
 async function handleCimFile(file) {
@@ -1153,31 +1409,29 @@ async function handleCimFile(file) {
     return;
   }
 
+  if (file.size > MAX_CIM_UPLOAD_BYTES) {
+    setCimError('PDF exceeds the 100 MB upload limit.');
+    return;
+  }
+
   setCimStatus('Uploading PDF...');
   clearTimeout(cimStatusTimeout);
   cimStatusTimeout = setTimeout(() => setCimStatus('Extracting financial data...'), 900);
 
   try {
-    const formData = new FormData();
-    formData.append('file', file);
+    let payload;
 
-    const response = await fetch(EXTRACTION_ENDPOINT, {
-      method: 'POST',
-      body: formData,
-    });
-
-    clearTimeout(cimStatusTimeout);
-
-    if (response.status === 401) {
-      window.location.href = '/login.html';
-      return;
+    if (USE_DIRECT_CIM_UPLOAD) {
+      const blob = await uploadCimToBlob(file);
+      clearTimeout(cimStatusTimeout);
+      setCimStatus('Extracting financial data...');
+      payload = await extractStoredCim(blob);
+    } else {
+      payload = await extractUploadedCimLocally(file);
+      clearTimeout(cimStatusTimeout);
     }
 
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      throw new Error(payload.error || 'CIM extraction failed.');
-    }
-
+    if (!payload) return;
     setCimStatus('Extraction complete.');
     renderCimResults(payload);
   } catch (error) {
@@ -1453,6 +1707,14 @@ async function sendMessage() {
 // ═══════════════════════════════════════════════
 sendBtn.addEventListener('click', sendMessage);
 
+chatTab.addEventListener('click', () => {
+  setActiveView('chat');
+});
+
+modellingTab.addEventListener('click', () => {
+  setActiveView('modelling');
+});
+
 stopBtn.addEventListener('click', () => {
   if (abortCtrl) abortCtrl.abort();
 });
@@ -1513,6 +1775,7 @@ logoutBtn.addEventListener('click', async () => {
 $('error-close').addEventListener('click', hideError);
 
 newChatBtn.addEventListener('click', () => {
+  setActiveView('chat');
   conversation = [];
   // Remove all message rows but keep welcome & typing indicator
   [...messagesEl.children].forEach(child => {
@@ -1528,6 +1791,7 @@ newChatBtn.addEventListener('click', () => {
 // ═══════════════════════════════════════════════
 //  INITIALISATION
 // ═══════════════════════════════════════════════
+setActiveView('chat');
 userInput.focus();
 checkBackendHealth();
 </script>

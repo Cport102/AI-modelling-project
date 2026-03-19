@@ -1,4 +1,5 @@
 const EXTRACTION_MODEL = process.env.GEMINI_EXTRACTION_MODEL || 'gemini-2.5-flash';
+const { isTrustedBlobUrl } = require('./blob-storage');
 
 const EXTRACTION_PROMPT = `You are extracting financial data from a bankers' sellside CIM / management plan PDF.
 
@@ -114,6 +115,29 @@ function isPdfFile(file) {
   return hasPdfExtension || hasPdfMime || hasPdfSignature;
 }
 
+async function loadPdfFromSource(source) {
+  if (source?.buffer) {
+    return source;
+  }
+
+  const downloadUrl = source?.downloadUrl || source?.blobDownloadUrl || '';
+  if (!isTrustedBlobUrl(downloadUrl)) {
+    throw new Error('Stored PDF URL is invalid or not trusted.');
+  }
+
+  const response = await fetch(downloadUrl);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch stored PDF: ${response.status}`);
+  }
+
+  const arrayBuffer = await response.arrayBuffer();
+  return {
+    filename: source?.filename || 'cim.pdf',
+    mimeType: source?.mimeType || response.headers.get('content-type') || 'application/pdf',
+    buffer: Buffer.from(arrayBuffer),
+  };
+}
+
 async function uploadGeminiFile({ apiKey, file }) {
   const startResponse = await fetch('https://generativelanguage.googleapis.com/upload/v1beta/files', {
     method: 'POST',
@@ -161,9 +185,24 @@ async function uploadGeminiFile({ apiKey, file }) {
   return uploadJson.file || uploadJson;
 }
 
+function normalizeGeminiFileName(fileName) {
+  const normalized = String(fileName || '').trim();
+  if (!normalized) {
+    throw new Error('Gemini file upload did not return a file name.');
+  }
+
+  if (normalized.startsWith('files/')) {
+    return normalized;
+  }
+
+  return `files/${normalized}`;
+}
+
 async function waitForFileActive({ apiKey, fileName }) {
+  const normalizedName = normalizeGeminiFileName(fileName);
+
   for (let attempt = 0; attempt < 20; attempt += 1) {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/files/${encodeURIComponent(fileName)}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/${normalizedName}`, {
       headers: {
         'x-goog-api-key': apiKey,
       },
@@ -194,8 +233,9 @@ async function waitForFileActive({ apiKey, fileName }) {
 
 async function deleteGeminiFile({ apiKey, fileName }) {
   if (!fileName) return;
+  const normalizedName = normalizeGeminiFileName(fileName);
   try {
-    await fetch(`https://generativelanguage.googleapis.com/v1beta/files/${encodeURIComponent(fileName)}`, {
+    await fetch(`https://generativelanguage.googleapis.com/v1beta/${normalizedName}`, {
       method: 'DELETE',
       headers: {
         'x-goog-api-key': apiKey,
@@ -212,6 +252,72 @@ function getResponseText(payload) {
     .map(part => part?.text || '')
     .join('')
     .trim();
+}
+
+function stripMarkdownCodeFences(value) {
+  const trimmed = String(value || '').trim();
+  const fencedMatch = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  return fencedMatch ? fencedMatch[1].trim() : trimmed;
+}
+
+function extractFirstJsonObject(value) {
+  const text = stripMarkdownCodeFences(value);
+  const start = text.indexOf('{');
+
+  if (start === -1) {
+    console.error('Gemini extraction parse failure: no JSON object found in response:', text.slice(0, 2000));
+    throw new Error('Gemini returned invalid JSON.');
+  }
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (let i = start; i < text.length; i += 1) {
+    const char = text[i];
+
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (char === '\\') {
+        escaped = true;
+      } else if (char === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      inString = true;
+      continue;
+    }
+
+    if (char === '{') {
+      depth += 1;
+      continue;
+    }
+
+    if (char === '}') {
+      depth -= 1;
+      if (depth === 0) {
+        return text.slice(start, i + 1);
+      }
+    }
+  }
+
+  console.error('Gemini extraction parse failure: JSON object appears truncated:', text.slice(start, Math.min(text.length, start + 2000)));
+  throw new Error('Gemini returned invalid JSON.');
+}
+
+function parseGeminiJsonResponse(responseText) {
+  const candidate = extractFirstJsonObject(responseText);
+
+  try {
+    return JSON.parse(candidate);
+  } catch {
+    console.error('Gemini extraction parse failure:', candidate.slice(0, 1000));
+    throw new Error('Gemini returned invalid JSON.');
+  }
 }
 
 function isNumberOrNull(value) {
@@ -361,11 +467,13 @@ function deriveSoftWarnings(result, rows) {
 }
 
 async function extractCimDataFromPdf(file) {
-  if (!file || !file.buffer) {
+  const normalizedFile = await loadPdfFromSource(file);
+
+  if (!normalizedFile || !normalizedFile.buffer) {
     throw new Error('No file uploaded.');
   }
 
-  if (!isPdfFile(file)) {
+  if (!isPdfFile(normalizedFile)) {
     throw new Error('Only PDF files are supported.');
   }
 
@@ -373,7 +481,7 @@ async function extractCimDataFromPdf(file) {
   let uploadedFile;
 
   try {
-    uploadedFile = await uploadGeminiFile({ apiKey, file });
+    uploadedFile = await uploadGeminiFile({ apiKey, file: normalizedFile });
     uploadedFile = await waitForFileActive({ apiKey, fileName: uploadedFile.name });
 
     const generationResponse = await fetch(
@@ -404,7 +512,7 @@ async function extractCimDataFromPdf(file) {
           generationConfig: {
             responseMimeType: 'application/json',
             responseJsonSchema: EXTRACTION_SCHEMA,
-            maxOutputTokens: 2000,
+            maxOutputTokens: 4000,
           },
         }),
       }
@@ -418,15 +526,11 @@ async function extractCimDataFromPdf(file) {
     const responseJson = await generationResponse.json();
     const responseText = getResponseText(responseJson);
     if (!responseText) {
+      console.error('Gemini extraction returned an empty text payload:', JSON.stringify(responseJson).slice(0, 2000));
       throw new Error('Gemini returned an empty extraction result.');
     }
 
-    let structured;
-    try {
-      structured = JSON.parse(responseText);
-    } catch {
-      throw new Error('Gemini returned invalid JSON.');
-    }
+    const structured = parseGeminiJsonResponse(responseText);
 
     validateStructuredResult(structured);
     const rows = normalizeRows(structured);

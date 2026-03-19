@@ -8,6 +8,7 @@ const { URL } = require('url');
 const { DAN_PROMPT } = require('./dan-prompt');
 const { parseMultipartPdf } = require('./multipart-parser');
 const { extractCimDataFromPdf } = require('./cim-extraction');
+const { deleteBlobIfPresent, isTrustedBlobUrl } = require('./blob-storage');
 
 const PORT = Number(process.env.PORT || 3000);
 const ROOT_DIR = __dirname;
@@ -300,20 +301,50 @@ async function handleCimExtraction(req, res) {
     return;
   }
 
+  let source = null;
+
   try {
-    const file = await parseMultipartPdf(req);
-    const result = await extractCimDataFromPdf(file);
+    const contentType = String(req.headers['content-type'] || '').toLowerCase();
+
+    if (contentType.startsWith('application/json')) {
+      const payload = await readJsonBody(req);
+      const blobUrl = payload.blobUrl || '';
+      const downloadUrl = payload.downloadUrl || payload.blobDownloadUrl || '';
+
+      if (!blobUrl || !downloadUrl) {
+        sendJson(res, 400, { error: 'blobUrl and downloadUrl are required.' });
+        return;
+      }
+
+      if (!isTrustedBlobUrl(blobUrl) || !isTrustedBlobUrl(downloadUrl)) {
+        sendJson(res, 400, { error: 'Stored PDF URL is invalid or not trusted.' });
+        return;
+      }
+
+      source = {
+        blobUrl,
+        downloadUrl,
+        filename: payload.filename || 'cim.pdf',
+        mimeType: payload.mimeType || 'application/pdf',
+      };
+    } else {
+      source = await parseMultipartPdf(req);
+    }
+
+    const result = await extractCimDataFromPdf(source);
     sendJson(res, 200, result);
   } catch (error) {
     const message = error?.message || 'CIM extraction failed.';
     const statusCode =
-      /No file uploaded|Only PDF files|Content-Type must be multipart|Missing multipart boundary|Uploaded file exceeds/.test(message)
+      /No file uploaded|Only PDF files|Content-Type must be multipart|Missing multipart boundary|Uploaded file exceeds|blobUrl and downloadUrl are required|Stored PDF URL is invalid or not trusted|Invalid JSON body/.test(message)
         ? 400
         : /No financial rows could be extracted|Gemini returned invalid JSON|Model response was not a JSON object/.test(message)
           ? 422
           : 500;
 
     sendJson(res, statusCode, { error: message });
+  } finally {
+    await deleteBlobIfPresent(source?.blobUrl);
   }
 }
 
@@ -433,7 +464,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  const relativePath = pathname === '/' ? '/chatbot.html' : pathname;
+  const relativePath = pathname === '/' ? '/chatbot.html' : decodeURIComponent(pathname);
   const normalizedPath = path.normalize(relativePath).replace(/^(\.\.[/\\])+/, '');
   const filePath = path.join(ROOT_DIR, normalizedPath);
 

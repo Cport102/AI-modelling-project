@@ -1,9 +1,4 @@
-import { createRequire } from 'module';
-
-const require = createRequire(import.meta.url);
-const { extractCimDataFromPdf } = require('../cim-extraction');
-const { parseMultipartPdf } = require('../multipart-parser');
-const { deleteBlobIfPresent, isTrustedBlobUrl } = require('../blob-storage');
+import { handleUpload } from '@vercel/blob/client';
 
 const SECURITY_HEADERS = {
   'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data:; connect-src 'self'; font-src 'self' https://cdnjs.cloudflare.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'",
@@ -15,6 +10,8 @@ const SECURITY_HEADERS = {
 
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 10;
+const SESSION_COOKIE_NAME = 'dtgpt_session';
+const MAX_CIM_UPLOAD_BYTES = 100 * 1024 * 1024;
 const rateLimitStore = new Map();
 
 function applySecurityHeaders(res) {
@@ -70,6 +67,27 @@ function getClientIp(req) {
   return req.socket?.remoteAddress || 'unknown';
 }
 
+function enforceRateLimit(req, res) {
+  const now = Date.now();
+  const ip = getClientIp(req);
+  const windowStart = now - RATE_LIMIT_WINDOW_MS;
+  const recentHits = (rateLimitStore.get(ip) || []).filter(timestamp => timestamp > windowStart);
+
+  if (recentHits.length >= RATE_LIMIT_MAX_REQUESTS) {
+    const retryAfterSeconds = Math.ceil((recentHits[0] + RATE_LIMIT_WINDOW_MS - now) / 1000);
+    res.setHeader('Retry-After', String(retryAfterSeconds));
+    res.setHeader('X-RateLimit-Limit', String(RATE_LIMIT_MAX_REQUESTS));
+    res.setHeader('X-RateLimit-Remaining', '0');
+    return false;
+  }
+
+  recentHits.push(now);
+  rateLimitStore.set(ip, recentHits);
+  res.setHeader('X-RateLimit-Limit', String(RATE_LIMIT_MAX_REQUESTS));
+  res.setHeader('X-RateLimit-Remaining', String(Math.max(0, RATE_LIMIT_MAX_REQUESTS - recentHits.length)));
+  return true;
+}
+
 function getCookieValue(req, name) {
   const cookieHeader = req.headers.cookie || '';
   const cookies = cookieHeader.split(';').map(cookie => cookie.trim());
@@ -99,28 +117,7 @@ async function isAuthenticated(req) {
   const data = new TextEncoder().encode(`${password}:${secret}`);
   const digest = await crypto.subtle.digest('SHA-256', data);
   const expected = await toHex(digest);
-  return getCookieValue(req, 'dtgpt_session') === expected;
-}
-
-function enforceRateLimit(req, res) {
-  const now = Date.now();
-  const ip = getClientIp(req);
-  const windowStart = now - RATE_LIMIT_WINDOW_MS;
-  const recentHits = (rateLimitStore.get(ip) || []).filter(timestamp => timestamp > windowStart);
-
-  if (recentHits.length >= RATE_LIMIT_MAX_REQUESTS) {
-    const retryAfterSeconds = Math.ceil((recentHits[0] + RATE_LIMIT_WINDOW_MS - now) / 1000);
-    res.setHeader('Retry-After', String(retryAfterSeconds));
-    res.setHeader('X-RateLimit-Limit', String(RATE_LIMIT_MAX_REQUESTS));
-    res.setHeader('X-RateLimit-Remaining', '0');
-    return false;
-  }
-
-  recentHits.push(now);
-  rateLimitStore.set(ip, recentHits);
-  res.setHeader('X-RateLimit-Limit', String(RATE_LIMIT_MAX_REQUESTS));
-  res.setHeader('X-RateLimit-Remaining', String(Math.max(0, RATE_LIMIT_MAX_REQUESTS - recentHits.length)));
-  return true;
+  return getCookieValue(req, SESSION_COOKIE_NAME) === expected;
 }
 
 export default async function handler(req, res) {
@@ -138,6 +135,10 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed.' });
   }
 
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    return res.status(500).json({ error: 'BLOB_READ_WRITE_TOKEN is not configured.' });
+  }
+
   if (!isAllowedOrigin(req)) {
     return res.status(403).json({ error: 'Origin not allowed.' });
   }
@@ -150,48 +151,22 @@ export default async function handler(req, res) {
     return res.status(429).json({ error: 'Rate limit exceeded. Try again later.' });
   }
 
-  let source = null;
-
   try {
-    const contentType = String(req.headers['content-type'] || '').toLowerCase();
+    const jsonResponse = await handleUpload({
+      body: req.body,
+      request: req,
+      onBeforeGenerateToken: async () => ({
+        allowedContentTypes: ['application/pdf'],
+        addRandomSuffix: true,
+        maximumSizeInBytes: MAX_CIM_UPLOAD_BYTES,
+      }),
+      onUploadCompleted: async () => {},
+    });
 
-    if (contentType.startsWith('application/json')) {
-      const blobUrl = req.body?.blobUrl || '';
-      const downloadUrl = req.body?.downloadUrl || req.body?.blobDownloadUrl || '';
-
-      if (!blobUrl || !downloadUrl) {
-        return res.status(400).json({ error: 'blobUrl and downloadUrl are required.' });
-      }
-
-      if (!isTrustedBlobUrl(blobUrl) || !isTrustedBlobUrl(downloadUrl)) {
-        return res.status(400).json({ error: 'Stored PDF URL is invalid or not trusted.' });
-      }
-
-      source = {
-        blobUrl,
-        downloadUrl,
-        filename: req.body?.filename || 'cim.pdf',
-        mimeType: req.body?.mimeType || 'application/pdf',
-      };
-    } else {
-      source = await parseMultipartPdf(req);
-    }
-
-    const result = await extractCimDataFromPdf(source);
-    return res.status(200).json(result);
+    return res.status(200).json(jsonResponse);
   } catch (error) {
-    const message = error?.message || 'CIM extraction failed.';
-    const statusCode =
-      /No file uploaded|Only PDF files|Content-Type must be multipart|Missing multipart boundary|Uploaded file exceeds|blobUrl and downloadUrl are required|Stored PDF URL is invalid or not trusted/.test(message)
-        ? 400
-        : /Authentication required/.test(message)
-          ? 401
-          : /No financial rows could be extracted|Gemini returned invalid JSON|Model response was not a JSON object/.test(message)
-            ? 422
-            : 500;
-
-    return res.status(statusCode).json({ error: message });
-  } finally {
-    await deleteBlobIfPresent(source?.blobUrl);
+    return res.status(400).json({
+      error: error?.message || 'Could not initialize CIM upload.',
+    });
   }
 }
