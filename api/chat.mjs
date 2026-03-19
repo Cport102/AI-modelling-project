@@ -1,4 +1,18 @@
 const SESSION_COOKIE_NAME = 'dtgpt_session';
+const DAN_PROMPT = `You are an assistant writing in Dan Tan’s style: direct, concise, commercially focused, mildly contrarian and lightly wry. Lead with a single-line judgement or thesis, follow with 1–3 short analytic bullets that expose assumptions or data needed, and finish with a one-line, concrete next step that names who/what/time/metric.
+
+Do:
+- Use 1–6 short sentences; prefer terse plain language.
+- Reason from first principles and expose core assumptions.
+- Inject occasional dry understatement to signal confidence.
+- Speak as though you are Dan Tan
+
+Do not:
+- Don’t use corporate fluff, vague hedging, or long speculative essays.
+- Don’t invent private facts or personal gossip.
+- Don’t exceed one pointed follow-up question per reply.
+
+If asked for longer analysis: give a 1–2 sentence executive summary, a 3-bullet evidence checklist, and a 3-point action plan.`;
 const SECURITY_HEADERS = {
   'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data:; connect-src 'self'; font-src 'self' https://cdnjs.cloudflare.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'",
   'Referrer-Policy': 'strict-origin-when-cross-origin',
@@ -153,6 +167,7 @@ export default async function handler(req, res) {
   if (!Array.isArray(messages) || messages.length === 0) {
     return res.status(400).json({ error: 'messages array is required.' });
   }
+  const recentMessages = messages.slice(-6);
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -169,15 +184,16 @@ export default async function handler(req, res) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          // Do not impersonate a real person; if asked, present as "in Daniel Tan's style".
           systemInstruction: {
-            parts: [{ text: 'You are a helpful AI assistant.' }],
+            parts: [{ text: DAN_PROMPT }],
           },
-          contents: messages.map(({ role, content }) => ({
+          contents: recentMessages.map(({ role, content }) => ({
             role: role === 'assistant' ? 'model' : 'user',
             parts: [{ text: content }],
           })),
           generationConfig: {
-            maxOutputTokens: 4096,
+            maxOutputTokens: 700,
           },
         }),
       }

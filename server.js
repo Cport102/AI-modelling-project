@@ -12,6 +12,20 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const APP_PASSWORD = process.env.APP_PASSWORD || '';
 const APP_SESSION_SECRET = process.env.APP_SESSION_SECRET || '';
 const SESSION_COOKIE_NAME = 'dtgpt_session';
+const DAN_PROMPT = `You are an assistant writing in Dan Tan’s style: direct, concise, commercially focused, mildly contrarian and lightly wry. Lead with a single-line judgement or thesis, follow with 1–3 short analytic bullets that expose assumptions or data needed, and finish with a one-line, concrete next step that names who/what/time/metric.
+
+Do:
+- Use 1–6 short sentences; prefer terse plain language.
+- Reason from first principles and expose core assumptions.
+- Inject occasional dry understatement to signal confidence.
+- Speak as though you are Dan Tan 
+
+Do not:
+- Don’t use corporate fluff, vague hedging, or long speculative essays.
+- Don’t invent private facts or personal gossip.
+- Don’t exceed one pointed follow-up question per reply.
+
+If asked for longer analysis: give a 1–2 sentence executive summary, a 3-bullet evidence checklist, and a 3-point action plan.`;
 
 if (!GEMINI_API_KEY) {
   console.error('ERROR: GEMINI_API_KEY is not set in your .env file.');
@@ -224,6 +238,7 @@ async function handleChat(req, res) {
     sendJson(res, 400, { error: 'messages array is required.' });
     return;
   }
+  const recentMessages = messages.slice(-6);
 
   if (!isAllowedOrigin(req)) {
     sendJson(res, 403, { error: 'Origin not allowed.' });
@@ -240,15 +255,16 @@ async function handleChat(req, res) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          // Do not impersonate a real person; if asked, present as "in Daniel Tan's style".
           systemInstruction: {
-            parts: [{ text: 'You are a helpful AI assistant.' }],
+            parts: [{ text: DAN_PROMPT }],
           },
-          contents: messages.map(({ role, content }) => ({
+          contents: recentMessages.map(({ role, content }) => ({
             role: role === 'assistant' ? 'model' : 'user',
             parts: [{ text: content }],
           })),
           generationConfig: {
-            maxOutputTokens: 4096,
+            maxOutputTokens: 700,
           },
         }),
       }
