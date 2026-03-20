@@ -70,38 +70,6 @@ function getClientIp(req) {
   return req.socket?.remoteAddress || 'unknown';
 }
 
-function getCookieValue(req, name) {
-  const cookieHeader = req.headers.cookie || '';
-  const cookies = cookieHeader.split(';').map(cookie => cookie.trim());
-
-  for (const cookie of cookies) {
-    if (!cookie) continue;
-    const [key, ...valueParts] = cookie.split('=');
-    if (key === name) {
-      return valueParts.join('=');
-    }
-  }
-
-  return '';
-}
-
-async function toHex(buffer) {
-  return Array.from(new Uint8Array(buffer))
-    .map(byte => byte.toString(16).padStart(2, '0'))
-    .join('');
-}
-
-async function isAuthenticated(req) {
-  const password = process.env.APP_PASSWORD || '';
-  const secret = process.env.APP_SESSION_SECRET || '';
-  if (!password || !secret) return true;
-
-  const data = new TextEncoder().encode(`${password}:${secret}`);
-  const digest = await crypto.subtle.digest('SHA-256', data);
-  const expected = await toHex(digest);
-  return getCookieValue(req, 'dtgpt_session') === expected;
-}
-
 function enforceRateLimit(req, res) {
   const now = Date.now();
   const ip = getClientIp(req);
@@ -142,10 +110,6 @@ export default async function handler(req, res) {
     return res.status(403).json({ error: 'Origin not allowed.' });
   }
 
-  if (!(await isAuthenticated(req))) {
-    return res.status(401).json({ error: 'Authentication required.' });
-  }
-
   if (!enforceRateLimit(req, res)) {
     return res.status(429).json({ error: 'Rate limit exceeded. Try again later.' });
   }
@@ -184,9 +148,7 @@ export default async function handler(req, res) {
     const statusCode =
       /No file uploaded|Only PDF files|Content-Type must be multipart|Missing multipart boundary|Uploaded file exceeds|blobUrl and downloadUrl are required|Stored PDF URL is invalid or not trusted/.test(message)
         ? 400
-        : /Authentication required/.test(message)
-          ? 401
-          : /No financial rows could be extracted|Gemini returned invalid JSON|Model response was not a JSON object/.test(message)
+        : /No financial rows could be extracted|Gemini returned invalid JSON|Model response was not a JSON object/.test(message)
             ? 422
             : 500;
 

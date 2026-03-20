@@ -3,7 +3,6 @@
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
-const crypto = require('crypto');
 const { URL } = require('url');
 const { DAN_PROMPT } = require('./dan-prompt');
 const { parseMultipartPdf } = require('./multipart-parser');
@@ -14,10 +13,7 @@ const { issueCimAccessToken, DEFAULT_TOKEN_LIFETIME_SECONDS } = require('./cim-a
 const PORT = Number(process.env.PORT || 3000);
 const ROOT_DIR = __dirname;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const APP_PASSWORD = process.env.APP_PASSWORD || '';
-const APP_SESSION_SECRET = process.env.APP_SESSION_SECRET || '';
 const CIM_API_BASE_URL = process.env.CIM_API_BASE_URL || '';
-const SESSION_COOKIE_NAME = 'dtgpt_session';
 
 if (!GEMINI_API_KEY) {
   console.error('ERROR: GEMINI_API_KEY is not set in your .env file.');
@@ -86,53 +82,6 @@ function isAllowedOrigin(req) {
   const origin = getOrigin(req);
   if (!origin) return true;
   return getAllowedOrigins(req).includes(origin);
-}
-
-function getCookieValue(req, name) {
-  const cookieHeader = req.headers.cookie || '';
-  const cookies = cookieHeader.split(';').map(cookie => cookie.trim());
-
-  for (const cookie of cookies) {
-    if (!cookie) continue;
-    const [key, ...valueParts] = cookie.split('=');
-    if (key === name) {
-      return valueParts.join('=');
-    }
-  }
-
-  return '';
-}
-
-function getSessionValue() {
-  if (!APP_PASSWORD || !APP_SESSION_SECRET) {
-    return '';
-  }
-
-  return crypto.createHash('sha256').update(`${APP_PASSWORD}:${APP_SESSION_SECRET}`).digest('hex');
-}
-
-function isAuthenticated(req) {
-  const sessionValue = getSessionValue();
-  if (!sessionValue) return true;
-  return getCookieValue(req, SESSION_COOKIE_NAME) === sessionValue;
-}
-
-function useSecureCookie(req) {
-  const forwardedProto = req.headers['x-forwarded-proto'];
-  if (typeof forwardedProto === 'string') {
-    return forwardedProto.includes('https');
-  }
-
-  const host = req.headers.host || '';
-  return !host.startsWith('localhost');
-}
-
-function setSessionCookie(req, res, value, maxAgeSeconds) {
-  const secureFlag = useSecureCookie(req) ? '; Secure' : '';
-  res.setHeader(
-    'Set-Cookie',
-    `${SESSION_COOKIE_NAME}=${value}; Path=/; HttpOnly; SameSite=Strict${secureFlag}; Max-Age=${maxAgeSeconds}`
-  );
 }
 
 function getClientIp(req) {
@@ -351,40 +300,11 @@ async function handleCimExtraction(req, res) {
 }
 
 function handleLogin(req, res) {
-  if (!isAllowedOrigin(req)) {
-    sendJson(res, 403, { error: 'Origin not allowed.' });
-    return;
-  }
-
-  readJsonBody(req)
-    .then(payload => {
-      if (!APP_PASSWORD || !APP_SESSION_SECRET) {
-        sendJson(res, 500, { error: 'Password protection is not configured.' });
-        return;
-      }
-
-      if ((payload.password || '') !== APP_PASSWORD) {
-        sendJson(res, 401, { error: 'Incorrect password.' });
-        return;
-      }
-
-      setSessionCookie(req, res, getSessionValue(), 60 * 60 * 12);
-      sendJson(res, 200, { ok: true });
-    })
-    .catch(error => {
-      const statusCode = error.message === 'Invalid JSON body' ? 400 : 413;
-      sendJson(res, statusCode, { error: error.message });
-    });
+  sendJson(res, 200, { ok: true, authDisabled: true });
 }
 
 function handleLogout(req, res) {
-  if (!isAllowedOrigin(req)) {
-    sendJson(res, 403, { error: 'Origin not allowed.' });
-    return;
-  }
-
-  setSessionCookie(req, res, '', 0);
-  sendJson(res, 200, { ok: true });
+  sendJson(res, 200, { ok: true, authDisabled: true });
 }
 
 const server = http.createServer(async (req, res) => {
@@ -414,11 +334,6 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    if (!isAuthenticated(req)) {
-      sendJson(res, 401, { error: 'Authentication required.' });
-      return;
-    }
-
     try {
       const token = issueCimAccessToken({
         secret: process.env.CIM_SHARED_SECRET,
@@ -441,11 +356,6 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    if (!isAuthenticated(req)) {
-      sendJson(res, 401, { error: 'Authentication required.' });
-      return;
-    }
-
     if (!enforceRateLimit(req, res)) {
       return;
     }
@@ -457,11 +367,6 @@ const server = http.createServer(async (req, res) => {
   if (pathname === '/api/extract-cim') {
     if (req.method !== 'POST') {
       sendJson(res, 405, { error: 'Method not allowed' });
-      return;
-    }
-
-    if (!isAuthenticated(req)) {
-      sendJson(res, 401, { error: 'Authentication required.' });
       return;
     }
 
@@ -495,13 +400,6 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     sendJson(res, 405, { error: 'Method not allowed' });
-    return;
-  }
-
-  if (APP_PASSWORD && APP_SESSION_SECRET && pathname !== '/login.html' && !isAuthenticated(req)) {
-    applySecurityHeaders(res);
-    res.writeHead(302, { Location: '/login.html' });
-    res.end();
     return;
   }
 

@@ -869,14 +869,6 @@
     </div>
 
     <div id="header-right">
-      <button class="icon-btn" id="logout-btn" title="Log out" aria-label="Log out">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-          <polyline points="16 17 21 12 16 7"/>
-          <line x1="21" y1="12" x2="9" y2="12"/>
-        </svg>
-      </button>
-
       <!-- New Chat -->
       <button class="icon-btn" id="new-chat-btn" title="New chat" aria-label="New chat">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1100,7 +1092,6 @@ const userInput   = $('user-input');
 const sendBtn     = $('send-btn');
 const stopBtn     = $('stop-btn');
 const modelSelect = $('model-select');
-const logoutBtn   = $('logout-btn');
 const newChatBtn  = $('new-chat-btn');
 const themeBtn    = $('theme-btn');
 const iconSun     = $('icon-sun');
@@ -1119,6 +1110,10 @@ function setActiveView(view) {
   messagesEl.classList.toggle('hidden', !showChat);
   errorBanner.classList.toggle('hidden', !showChat);
   inputArea.classList.toggle('hidden', !showChat);
+  const hash = showChat ? '#chat' : '#modelling';
+  if (window.location.hash !== hash) {
+    history.replaceState(null, '', `${window.location.pathname}${window.location.search}${hash}`);
+  }
 }
 
 // ═══════════════════════════════════════════════
@@ -1165,11 +1160,6 @@ async function getCimAccessToken() {
     headers: { 'Content-Type': 'application/json' },
     body: '{}',
   });
-
-  if (response.status === 401) {
-    window.location.href = '/login.html';
-    return null;
-  }
 
   const payload = await response.json().catch(() => ({}));
   if (!response.ok || !payload.token) {
@@ -1427,11 +1417,6 @@ async function extractStoredCim(blob) {
     }),
   });
 
-  if (response.status === 401) {
-    window.location.href = '/login.html';
-    return null;
-  }
-
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
     throw new Error(payload.error || 'CIM extraction failed.');
@@ -1456,11 +1441,6 @@ async function extractUploadedCimLocally(file) {
     headers,
     body: formData,
   });
-
-  if (response.status === 401) {
-    window.location.href = '/login.html';
-    return null;
-  }
 
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
@@ -1595,10 +1575,6 @@ function setStreaming(active) {
 async function checkBackendHealth() {
   try {
     const response = await fetch(HEALTH_ENDPOINT, { cache: 'no-store' });
-    if (response.status === 401) {
-      window.location.href = '/login.html';
-      return false;
-    }
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     hideError();
     return true;
@@ -1709,10 +1685,6 @@ async function sendMessage() {
     });
 
     if (!response.ok) {
-      if (response.status === 401) {
-        window.location.href = '/login.html';
-        return;
-      }
       let errBody = {};
       try { errBody = await response.json(); } catch {}
       const msg = errBody?.error?.message || `HTTP ${response.status} — ${response.statusText}`;
@@ -1863,14 +1835,6 @@ cimSendChatBtn.addEventListener('click', () => {
   setCimStatus('Extraction summary copied into the chat input.');
 });
 
-logoutBtn.addEventListener('click', async () => {
-  try {
-    await fetch('/api/logout', { method: 'POST' });
-  } finally {
-    window.location.href = '/login.html';
-  }
-});
-
 $('error-close').addEventListener('click', hideError);
 
 newChatBtn.addEventListener('click', () => {
@@ -1892,7 +1856,7 @@ newChatBtn.addEventListener('click', () => {
 // ═══════════════════════════════════════════════
 (async () => {
   await loadRuntimeConfig();
-  setActiveView('chat');
+  setActiveView(window.location.hash === '#modelling' ? 'modelling' : 'chat');
   userInput.focus();
   checkBackendHealth();
 })();

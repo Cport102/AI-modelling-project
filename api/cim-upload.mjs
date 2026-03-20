@@ -10,7 +10,6 @@ const SECURITY_HEADERS = {
 
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 10;
-const SESSION_COOKIE_NAME = 'dtgpt_session';
 const MAX_CIM_UPLOAD_BYTES = 100 * 1024 * 1024;
 const rateLimitStore = new Map();
 
@@ -88,38 +87,6 @@ function enforceRateLimit(req, res) {
   return true;
 }
 
-function getCookieValue(req, name) {
-  const cookieHeader = req.headers.cookie || '';
-  const cookies = cookieHeader.split(';').map(cookie => cookie.trim());
-
-  for (const cookie of cookies) {
-    if (!cookie) continue;
-    const [key, ...valueParts] = cookie.split('=');
-    if (key === name) {
-      return valueParts.join('=');
-    }
-  }
-
-  return '';
-}
-
-async function toHex(buffer) {
-  return Array.from(new Uint8Array(buffer))
-    .map(byte => byte.toString(16).padStart(2, '0'))
-    .join('');
-}
-
-async function isAuthenticated(req) {
-  const password = process.env.APP_PASSWORD || '';
-  const secret = process.env.APP_SESSION_SECRET || '';
-  if (!password || !secret) return true;
-
-  const data = new TextEncoder().encode(`${password}:${secret}`);
-  const digest = await crypto.subtle.digest('SHA-256', data);
-  const expected = await toHex(digest);
-  return getCookieValue(req, SESSION_COOKIE_NAME) === expected;
-}
-
 export default async function handler(req, res) {
   applySecurityHeaders(res);
   setCorsHeaders(req, res);
@@ -141,10 +108,6 @@ export default async function handler(req, res) {
 
   if (!isAllowedOrigin(req)) {
     return res.status(403).json({ error: 'Origin not allowed.' });
-  }
-
-  if (!(await isAuthenticated(req))) {
-    return res.status(401).json({ error: 'Authentication required.' });
   }
 
   if (!enforceRateLimit(req, res)) {

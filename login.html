@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DTGPT Login</title>
+  <title>DTGPT</title>
   <style>
     :root {
       --bg: #f5f1eb;
@@ -108,50 +108,12 @@
 <body>
   <main class="card">
     <h1>DTGPT</h1>
-    <p>Enter the site password to continue.</p>
-    <div id="error" role="alert"></div>
-    <form id="login-form">
-      <label for="password">Password</label>
-      <input id="password" name="password" type="password" autocomplete="current-password" required />
-      <button type="submit">Unlock</button>
-    </form>
+    <p>Password protection has been removed. Redirecting back to the app.</p>
   </main>
 
   <script>
-    const form = document.getElementById('login-form');
-    const errorEl = document.getElementById('error');
-    const passwordEl = document.getElementById('password');
-
-    function showError(message) {
-      errorEl.textContent = message;
-      errorEl.classList.add('visible');
-    }
-
-    form.addEventListener('submit', async event => {
-      event.preventDefault();
-      errorEl.classList.remove('visible');
-
-      try {
-        const response = await fetch('/api/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            password: passwordEl.value,
-          }),
-        });
-
-        if (!response.ok) {
-          let payload = {};
-          try { payload = await response.json(); } catch {}
-          throw new Error(payload.error || 'Login failed');
-        }
-
-        const next = new URLSearchParams(window.location.search).get('next') || '/';
-        window.location.href = next;
-      } catch (error) {
-        showError(error.message);
-      }
-    });
+    const next = new URLSearchParams(window.location.search).get('next') || '/';
+    window.location.replace(next);
   </script>
 </body>
 </html>
