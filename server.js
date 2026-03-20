@@ -9,6 +9,7 @@ const { DAN_PROMPT } = require('./dan-prompt');
 const { parseMultipartPdf } = require('./multipart-parser');
 const { extractCimDataFromPdf } = require('./cim-extraction');
 const { deleteBlobIfPresent, isTrustedBlobUrl } = require('./blob-storage');
+const { issueCimAccessToken, DEFAULT_TOKEN_LIFETIME_SECONDS } = require('./cim-access-token');
 
 const PORT = Number(process.env.PORT || 3000);
 const ROOT_DIR = __dirname;
@@ -399,6 +400,38 @@ const server = http.createServer(async (req, res) => {
     sendJson(res, 200, {
       cimApiBaseUrl: CIM_API_BASE_URL,
     });
+    return;
+  }
+
+  if (pathname === '/api/cim-access-token') {
+    if (req.method !== 'POST') {
+      sendJson(res, 405, { error: 'Method not allowed' });
+      return;
+    }
+
+    if (!isAllowedOrigin(req)) {
+      sendJson(res, 403, { error: 'Origin not allowed.' });
+      return;
+    }
+
+    if (!isAuthenticated(req)) {
+      sendJson(res, 401, { error: 'Authentication required.' });
+      return;
+    }
+
+    try {
+      const token = issueCimAccessToken({
+        secret: process.env.CIM_SHARED_SECRET,
+        lifetimeSeconds: DEFAULT_TOKEN_LIFETIME_SECONDS,
+      });
+
+      sendJson(res, 200, {
+        token,
+        expiresInSeconds: DEFAULT_TOKEN_LIFETIME_SECONDS,
+      });
+    } catch (error) {
+      sendJson(res, 500, { error: error?.message || 'Failed to issue CIM access token.' });
+    }
     return;
   }
 

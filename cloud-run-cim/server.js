@@ -2,6 +2,7 @@ const http = require('http');
 const { URL } = require('url');
 const { parseMultipartPdf } = require('./multipart-parser');
 const { extractCimDataFromPdf } = require('./extraction');
+const { verifyCimAccessToken } = require('./access-token');
 
 const PORT = Number(process.env.PORT || 8080);
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
@@ -43,7 +44,7 @@ function isAllowedOrigin(req) {
 function buildCorsHeaders(req) {
   const headers = {
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, X-CIM-Access-Token',
   };
 
   const origin = getOrigin(req);
@@ -93,6 +94,18 @@ function enforceRateLimit(req, res, corsHeaders) {
   return true;
 }
 
+function isAuthorized(req) {
+  try {
+    const verification = verifyCimAccessToken(
+      req.headers['x-cim-access-token'],
+      process.env.CIM_SHARED_SECRET
+    );
+    return verification.ok ? { ok: true } : verification;
+  } catch (error) {
+    return { ok: false, reason: error?.message || 'Authorization failed.' };
+  }
+}
+
 const server = http.createServer(async (req, res) => {
   const requestUrl = new URL(req.url, `http://${req.headers.host}`);
   const corsHeaders = buildCorsHeaders(req);
@@ -119,6 +132,11 @@ const server = http.createServer(async (req, res) => {
 
   if (!isAllowedOrigin(req)) {
     return sendJson(res, 403, { error: 'Origin not allowed.' }, corsHeaders);
+  }
+
+  const authorization = isAuthorized(req);
+  if (!authorization.ok) {
+    return sendJson(res, 401, { error: authorization.reason || 'Unauthorized.' }, corsHeaders);
   }
 
   if (!enforceRateLimit(req, res, corsHeaders)) {

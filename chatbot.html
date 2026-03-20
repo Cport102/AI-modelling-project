@@ -1060,10 +1060,15 @@ const HEALTH_ENDPOINT = (window.location.protocol === 'http:' || window.location
 const RUNTIME_CONFIG_ENDPOINT = (window.location.protocol === 'http:' || window.location.protocol === 'https:')
   ? '/api/runtime-config'
   : 'http://localhost:3000/api/runtime-config';
+const CIM_ACCESS_TOKEN_ENDPOINT = (window.location.protocol === 'http:' || window.location.protocol === 'https:')
+  ? '/api/cim-access-token'
+  : 'http://localhost:3000/api/cim-access-token';
 const USE_DIRECT_CIM_UPLOAD = !['localhost', '127.0.0.1'].includes(window.location.hostname);
 const MAX_CIM_UPLOAD_BYTES = 100 * 1024 * 1024;
 const SERVER_FALLBACK_MAX_BYTES = 4 * 1024 * 1024;
 let cimApiBaseUrl = '';
+let cimAccessToken = null;
+let cimAccessTokenExpiresAt = 0;
 
 // ═══════════════════════════════════════════════
 //  DOM REFERENCES
@@ -1147,6 +1152,33 @@ async function loadRuntimeConfig() {
   } catch {
     // Runtime config is optional.
   }
+}
+
+async function getCimAccessToken() {
+  const now = Date.now();
+  if (cimAccessToken && now < cimAccessTokenExpiresAt - 15000) {
+    return cimAccessToken;
+  }
+
+  const response = await fetch(CIM_ACCESS_TOKEN_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: '{}',
+  });
+
+  if (response.status === 401) {
+    window.location.href = '/login.html';
+    return null;
+  }
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || !payload.token) {
+    throw new Error(payload.error || 'Failed to get CIM access token.');
+  }
+
+  cimAccessToken = payload.token;
+  cimAccessTokenExpiresAt = Date.now() + (Number(payload.expiresInSeconds || 0) * 1000);
+  return cimAccessToken;
 }
 
 function applyTheme(theme) {
@@ -1377,9 +1409,16 @@ async function uploadCimToBlob(file) {
 }
 
 async function extractStoredCim(blob) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (shouldUseCloudRunCim()) {
+    const token = await getCimAccessToken();
+    if (!token) return null;
+    headers['X-CIM-Access-Token'] = token;
+  }
+
   const response = await fetch(getCimExtractionEndpoint(), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({
       blobUrl: blob.url,
       downloadUrl: blob.downloadUrl || blob.url,
@@ -1405,8 +1444,16 @@ async function extractUploadedCimLocally(file) {
   const formData = new FormData();
   formData.append('file', file);
 
+  const headers = {};
+  if (shouldUseCloudRunCim()) {
+    const token = await getCimAccessToken();
+    if (!token) return null;
+    headers['X-CIM-Access-Token'] = token;
+  }
+
   const response = await fetch(getCimExtractionEndpoint(), {
     method: 'POST',
+    headers,
     body: formData,
   });
 
