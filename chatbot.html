@@ -1048,18 +1048,22 @@ let isStreaming   = false;
 const API_ENDPOINT = (window.location.protocol === 'http:' || window.location.protocol === 'https:')
   ? '/api/chat'
   : 'http://localhost:3000/api/chat';
-const EXTRACTION_ENDPOINT = (window.location.protocol === 'http:' || window.location.protocol === 'https:')
+const LOCAL_EXTRACTION_ENDPOINT = (window.location.protocol === 'http:' || window.location.protocol === 'https:')
   ? '/api/extract-cim'
   : 'http://localhost:3000/api/extract-cim';
-const CIM_UPLOAD_ENDPOINT = (window.location.protocol === 'http:' || window.location.protocol === 'https:')
+const LOCAL_CIM_UPLOAD_ENDPOINT = (window.location.protocol === 'http:' || window.location.protocol === 'https:')
   ? '/api/cim-upload'
   : 'http://localhost:3000/api/cim-upload';
 const HEALTH_ENDPOINT = (window.location.protocol === 'http:' || window.location.protocol === 'https:')
   ? '/api/health'
   : 'http://localhost:3000/api/health';
+const RUNTIME_CONFIG_ENDPOINT = (window.location.protocol === 'http:' || window.location.protocol === 'https:')
+  ? '/api/runtime-config'
+  : 'http://localhost:3000/api/runtime-config';
 const USE_DIRECT_CIM_UPLOAD = !['localhost', '127.0.0.1'].includes(window.location.hostname);
 const MAX_CIM_UPLOAD_BYTES = 100 * 1024 * 1024;
 const SERVER_FALLBACK_MAX_BYTES = 4 * 1024 * 1024;
+let cimApiBaseUrl = '';
 
 // ═══════════════════════════════════════════════
 //  DOM REFERENCES
@@ -1120,6 +1124,30 @@ function getSystemTheme() {
 }
 
 let currentTheme = localStorage.getItem('dtgpt_theme') || getSystemTheme();
+
+function getCimExtractionEndpoint() {
+  return cimApiBaseUrl ? `${cimApiBaseUrl.replace(/\/$/, '')}/extract-cim` : LOCAL_EXTRACTION_ENDPOINT;
+}
+
+function getCimUploadEndpoint() {
+  return LOCAL_CIM_UPLOAD_ENDPOINT;
+}
+
+function shouldUseCloudRunCim() {
+  return Boolean(cimApiBaseUrl);
+}
+
+async function loadRuntimeConfig() {
+  try {
+    const response = await fetch(RUNTIME_CONFIG_ENDPOINT, { cache: 'no-store' });
+    if (!response.ok) return;
+
+    const payload = await response.json();
+    cimApiBaseUrl = String(payload?.cimApiBaseUrl || '').trim().replace(/\/$/, '');
+  } catch {
+    // Runtime config is optional.
+  }
+}
 
 function applyTheme(theme) {
   currentTheme = theme;
@@ -1340,7 +1368,7 @@ async function uploadCimToBlob(file) {
   return upload(`cim-uploads/${Date.now()}-${safeName}`, file, {
     access: 'private',
     contentType: 'application/pdf',
-    handleUploadUrl: CIM_UPLOAD_ENDPOINT,
+    handleUploadUrl: getCimUploadEndpoint(),
     multipart: file.size > 5 * 1024 * 1024,
     onUploadProgress: ({ percentage }) => {
       setCimStatus(`Uploading PDF... ${Math.round(percentage)}%`);
@@ -1349,7 +1377,7 @@ async function uploadCimToBlob(file) {
 }
 
 async function extractStoredCim(blob) {
-  const response = await fetch(EXTRACTION_ENDPOINT, {
+  const response = await fetch(getCimExtractionEndpoint(), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -1377,7 +1405,7 @@ async function extractUploadedCimLocally(file) {
   const formData = new FormData();
   formData.append('file', file);
 
-  const response = await fetch(EXTRACTION_ENDPOINT, {
+  const response = await fetch(getCimExtractionEndpoint(), {
     method: 'POST',
     body: formData,
   });
@@ -1430,7 +1458,11 @@ async function handleCimFile(file) {
   try {
     let payload;
 
-    if (USE_DIRECT_CIM_UPLOAD) {
+    if (shouldUseCloudRunCim()) {
+      clearTimeout(cimStatusTimeout);
+      setCimStatus('Uploading PDF...');
+      payload = await extractUploadedCimLocally(file);
+    } else if (USE_DIRECT_CIM_UPLOAD) {
       try {
         const blob = await uploadCimToBlob(file);
         clearTimeout(cimStatusTimeout);
@@ -1811,9 +1843,12 @@ newChatBtn.addEventListener('click', () => {
 // ═══════════════════════════════════════════════
 //  INITIALISATION
 // ═══════════════════════════════════════════════
-setActiveView('chat');
-userInput.focus();
-checkBackendHealth();
+(async () => {
+  await loadRuntimeConfig();
+  setActiveView('chat');
+  userInput.focus();
+  checkBackendHealth();
+})();
 </script>
 </body>
 </html>

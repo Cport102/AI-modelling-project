@@ -15,6 +15,7 @@ const ROOT_DIR = __dirname;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const APP_PASSWORD = process.env.APP_PASSWORD || '';
 const APP_SESSION_SECRET = process.env.APP_SESSION_SECRET || '';
+const CIM_API_BASE_URL = process.env.CIM_API_BASE_URL || '';
 const SESSION_COOKIE_NAME = 'dtgpt_session';
 
 if (!GEMINI_API_KEY) {
@@ -391,6 +392,13 @@ const server = http.createServer(async (req, res) => {
 
   if (pathname === '/api/health') {
     sendJson(res, 200, { ok: true });
+    return;
+  }
+
+  if (pathname === '/api/runtime-config') {
+    sendJson(res, 200, {
+      cimApiBaseUrl: CIM_API_BASE_URL,
+    });
     return;
   }
 

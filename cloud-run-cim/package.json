@@ -1,0 +1,10 @@
+{
+  "name": "cloud-run-cim",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cloud Run service for CIM PDF upload and Gemini extraction.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
