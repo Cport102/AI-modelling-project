@@ -1544,12 +1544,26 @@ function getReturnsDisplayContext(result) {
   };
 }
 
+function getReturnsUnitSuffix(units) {
+  switch (units) {
+    case 'thousands':
+      return 'k';
+    case 'millions':
+      return 'm';
+    case 'billions':
+      return 'bn';
+    default:
+      return '';
+  }
+}
+
 function formatReturnsMoney(value, result) {
   if (value === null || value === undefined || Number.isNaN(Number(value))) return 'â€”';
   const context = getReturnsDisplayContext(result);
   const scaledValue = Number(value) / context.multiplier;
   const prefix = context.currency ? `${context.currency} ` : '';
-  return `${prefix}${scaledValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  const suffix = getReturnsUnitSuffix(context.units);
+  return `${prefix}${scaledValue.toLocaleString(undefined, { maximumFractionDigits: 0, minimumFractionDigits: 0 })}${suffix}`;
 }
 
 function formatReturnsPercent(value) {
