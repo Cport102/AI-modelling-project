@@ -556,10 +556,12 @@
       }
 
       const pretaxUfcfConversion = assumptions.pretaxUfcfConversionRates[yearIndex];
+      const capexRate = (1 - pretaxUfcfConversion) * 0.5;
+      const capex = projectedPeriod.ebitda * capexRate;
+      const ebit = projectedPeriod.ebitda - capex;
       const pretaxUfcf = projectedPeriod.ebitda * pretaxUfcfConversion;
       const interest = debtBalance * assumptions.interestRate;
-      const taxableIncome = pretaxUfcf - interest;
-      const tax = Math.max(taxableIncome, 0) * assumptions.taxRate;
+      const tax = Math.max(ebit, 0) * assumptions.taxRate;
       const postTaxCashFlow = pretaxUfcf - interest - tax;
       const cashAccrualFactor = yearIndex === 0 ? firstYearCashAccrualFactor : 1;
       const realizedPostTaxCashFlow = postTaxCashFlow * cashAccrualFactor;
@@ -573,6 +575,8 @@
         ebitda: roundCurrency(projectedPeriod.ebitda),
         ebitdaMargin: roundRatio(projectedPeriod.margin),
         pretaxUfcfConversion: roundRatio(pretaxUfcfConversion),
+        capex: roundCurrency(capex),
+        ebit: roundCurrency(ebit),
         pretaxUfcf: roundCurrency(pretaxUfcf),
         tax: roundCurrency(tax),
         interest: roundCurrency(interest),

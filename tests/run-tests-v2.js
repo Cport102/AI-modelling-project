@@ -188,7 +188,7 @@ run('minimum cash entered in source units increases sponsor equity', () => {
   nearlyEqual(withMinimumCash.entry.pfEquity - baseline.entry.pfEquity, 3333333.33, 0.1);
 });
 
-run('tax is always 30 percent and interest is always 10 percent', () => {
+run('tax is always 30 percent of EBIT and interest is always 10 percent of debt', () => {
   const result = calculateReturns(buildSampleExtraction(), {
     entryDate: '2026-01-01',
     fiscalYearEndMonth: 6,
@@ -200,8 +200,10 @@ run('tax is always 30 percent and interest is always 10 percent', () => {
   });
 
   nearlyEqual(result.operatingProjection[0].interest, 9000000);
+  nearlyEqual(result.operatingProjection[0].capex, 6250000);
+  nearlyEqual(result.operatingProjection[0].ebit, 18750000);
   nearlyEqual(result.operatingProjection[0].pretaxUfcf, 12500000);
-  nearlyEqual(result.operatingProjection[0].tax, 1050000);
+  nearlyEqual(result.operatingProjection[0].tax, 5625000);
 });
 
 run('year 1 end-of-period cash only accrues the stub-period share of post-tax cash flow', () => {
@@ -216,8 +218,8 @@ run('year 1 end-of-period cash only accrues the stub-period share of post-tax ca
   });
 
   nearlyEqual(result.operatingProjection[0].cashAccrualFactor, 0.5, 0.00001);
-  nearlyEqual(result.operatingProjection[0].realizedPostTaxCashFlow, 1225000);
-  nearlyEqual(result.operatingProjection[0].cashEop, result.entry.minimumCash + 1225000, 0.1);
+  nearlyEqual(result.operatingProjection[0].realizedPostTaxCashFlow, -1062500);
+  nearlyEqual(result.operatingProjection[0].cashEop, result.entry.minimumCash - 1062500, 0.1);
   assert.ok(result.validation.warnings.includes('Year 1 end-of-period cash reflects 6/12 of post-tax cash flow based on the entry date.'));
 });
 
