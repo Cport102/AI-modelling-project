@@ -512,33 +512,6 @@
       margin-top: 14px;
     }
 
-    #returns-meta,
-    #returns-validation {
-      margin-top: 12px;
-      font-size: 13px;
-    }
-
-    #returns-meta {
-      color: var(--text-muted);
-    }
-
-    #returns-validation {
-      display: none;
-      background: var(--surface-hover);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 10px 12px;
-    }
-
-    #returns-validation.visible {
-      display: block;
-    }
-
-    #returns-validation ul {
-      margin: 0;
-      padding-left: 18px;
-    }
-
     #returns-results {
       display: none;
       margin-top: 16px;
@@ -577,16 +550,8 @@
       font-size: 16px;
     }
 
-    #returns-bridge,
     #returns-projection-wrap {
       margin-top: 14px;
-    }
-
-    #returns-bridge-list {
-      margin: 0;
-      padding-left: 18px;
-      color: var(--text-muted);
-      font-size: 13px;
     }
 
     #returns-projection-wrap {
@@ -1235,18 +1200,8 @@
           <button class="secondary-btn" id="returns-run-btn" type="button">Run returns model</button>
         </div>
 
-        <div id="returns-meta">Fixed constants: 10% interest, 30% tax, 1% advisory fees, 2% financing fees, 10% MIP on gross capital gain. Revenue and EBITDA come from CIM data; pre-tax uFCF conversion drives operating cash flow.</div>
-        <div id="returns-validation" role="alert">
-          <ul id="returns-validation-list"></ul>
-        </div>
-
         <div id="returns-results">
           <div class="returns-summary-grid" id="returns-summary-grid"></div>
-
-          <div id="returns-bridge" class="cim-result-block">
-            <h3>Value creation bridge</h3>
-            <ul id="returns-bridge-list"></ul>
-          </div>
 
           <div id="returns-projection-wrap">
             <table id="returns-projection-table">
@@ -1331,12 +1286,8 @@ const cimCopyJsonBtn = $('cim-copy-json-btn');
 const cimDownloadCsvBtn = $('cim-download-csv-btn');
 const cimSendChatBtn = $('cim-send-chat-btn');
 const returnsRunBtn = $('returns-run-btn');
-const returnsMeta = $('returns-meta');
-const returnsValidation = $('returns-validation');
-const returnsValidationList = $('returns-validation-list');
 const returnsResults = $('returns-results');
 const returnsSummaryGrid = $('returns-summary-grid');
-const returnsBridgeList = $('returns-bridge-list');
 const returnsProjectionBody = $('returns-projection-body');
 const assumptionEntryDate = $('assumption-entry-date');
 const assumptionFiscalYearEndMonth = $('assumption-fiscal-year-end-month');
@@ -1523,20 +1474,11 @@ function setCimError(message) {
   cimError.classList.toggle('visible', Boolean(message));
 }
 
-function setReturnsValidation(items) {
-  const values = Array.isArray(items) ? items.filter(Boolean) : [];
-  returnsValidation.classList.toggle('visible', values.length > 0);
-  returnsValidationList.innerHTML = values.map(value => `<li>${escapeHtml(String(value))}</li>`).join('');
-}
-
 function resetReturnsResults() {
   returnsModelResult = null;
-  returnsMeta.textContent = 'Load a CIM extraction first, then review the assumptions and run the returns model.';
   returnsResults.classList.remove('visible');
   returnsSummaryGrid.innerHTML = '';
-  returnsBridgeList.innerHTML = '';
   returnsProjectionBody.innerHTML = '';
-  setReturnsValidation([]);
 }
 
 function resetCimResults() {
@@ -1693,21 +1635,6 @@ function renderReturnsSummary(result) {
   `).join('');
 }
 
-function renderReturnsBridge(result) {
-  const bridge = result.valueCreationBridge || {};
-  const items = [
-    `Initial sponsor equity: ${formatReturnsMoney(bridge.initialSponsorEquity, result)}`,
-    `EBITDA growth effect: ${formatReturnsMoney(bridge.ebitdaGrowthEffect, result)}`,
-    `Multiple effect: ${formatReturnsMoney(bridge.multipleEffect, result)}`,
-    `Debt / cash movement: ${formatReturnsMoney(bridge.debtAndCashMovement, result)}`,
-    `Fixed fees impact (1% advisory, 2% financing): ${formatReturnsMoney(bridge.feesImpact, result)}`,
-    `MIP impact (10% of gross capital gain): ${formatReturnsMoney(bridge.mipImpact, result)}`,
-    `Final sponsor equity: ${formatReturnsMoney(bridge.finalSponsorEquity, result)}`,
-  ];
-
-  returnsBridgeList.innerHTML = items.map(item => `<li>${escapeHtml(item)}</li>`).join('');
-}
-
 function renderReturnsProjection(result) {
   const rows = (result.operatingProjection || []).slice();
   const lastRow = rows.length ? rows[rows.length - 1] : null;
@@ -1749,13 +1676,10 @@ function renderReturnsProjection(result) {
 function runReturnsModel() {
   if (!cimExtractionResult) {
     resetReturnsResults();
-    setReturnsValidation(['Upload and extract a CIM before running the returns model.']);
     return;
   }
 
   if (!window.ReturnsModel || typeof window.ReturnsModel.calculateReturns !== 'function') {
-    setReturnsValidation(['Shared returns model script failed to load.']);
-    returnsMeta.textContent = '';
     returnsResults.classList.remove('visible');
     return;
   }
@@ -1763,16 +1687,8 @@ function runReturnsModel() {
   try {
     const assumptions = collectReturnsAssumptions();
     const result = window.ReturnsModel.calculateReturns(cimExtractionResult, assumptions);
-    const messages = (result.validation?.errors || []).concat(result.validation?.warnings || []);
-    const context = getReturnsDisplayContext(result);
-    const constants = result.constants || {};
-    const fiscalYearEndText = result.assumptions?.fiscalYearEndMonth ? ` Fiscal year-end month: ${result.assumptions.fiscalYearEndMonth}.` : '';
-    const entryPeriodText = result.entry?.ntmPeriodLabel ? ` Entry EV uses blended NTM EBITDA based on ${result.entry.ntmPeriodLabel}.` : '';
-    const exitPeriodText = result.exit?.exitForwardPeriodLabel ? ` Exit EV uses ${result.exit.exitForwardPeriodLabel}.` : '';
 
     returnsModelResult = result;
-    returnsMeta.textContent = `Displayed in ${context.units}${context.currency ? ` (${context.currency})` : ''}. Fixed constants: ${(constants.interestRate || 0) * 100}% interest, ${(constants.taxRate || 0) * 100}% tax, ${(constants.advisoryFeesPct || 0) * 100}% advisory fees, ${(constants.financingFeesPct || 0) * 100}% financing fees, ${(constants.mipPct || 0) * 100}% MIP on gross capital gain. Revenue and EBITDA are sourced from CIM data; pre-tax uFCF conversion is the operating cash driver.${fiscalYearEndText}${entryPeriodText}${exitPeriodText}`;
-    setReturnsValidation(messages);
 
     if (result.validation?.errors?.length) {
       returnsResults.classList.remove('visible');
@@ -1780,12 +1696,10 @@ function runReturnsModel() {
     }
 
     renderReturnsSummary(result);
-    renderReturnsBridge(result);
     renderReturnsProjection(result);
     returnsResults.classList.add('visible');
   } catch (error) {
     returnsResults.classList.remove('visible');
-    setReturnsValidation([error?.message || 'Returns model failed in the browser.']);
   }
 }
 
