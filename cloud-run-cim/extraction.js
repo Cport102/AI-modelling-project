@@ -236,6 +236,15 @@ function stripMarkdownCodeFences(value) {
   return fencedMatch ? fencedMatch[1].trim() : trimmed;
 }
 
+function sanitizeJsonCandidate(value) {
+  return String(value || '')
+    .replace(/^\uFEFF/, '')
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .replace(/,\s*([}\]])/g, '$1')
+    .trim();
+}
+
 function extractFirstJsonObject(value) {
   const text = stripMarkdownCodeFences(value);
   const start = text.indexOf('{');
@@ -291,8 +300,14 @@ function parseGeminiJsonResponse(responseText) {
   try {
     return JSON.parse(candidate);
   } catch {
-    console.error('Gemini extraction parse failure:', candidate.slice(0, 1000));
-    throw new Error('Gemini returned invalid JSON.');
+    const sanitizedCandidate = sanitizeJsonCandidate(candidate);
+
+    try {
+      return JSON.parse(sanitizedCandidate);
+    } catch {
+      console.error('Gemini extraction parse failure:', candidate.slice(0, 1000));
+      throw new Error('Gemini returned invalid JSON.');
+    }
   }
 }
 
@@ -485,6 +500,7 @@ async function extractCimDataFromPdf(file) {
           ],
           generationConfig: {
             responseMimeType: 'application/json',
+            responseSchema: EXTRACTION_SCHEMA,
             responseJsonSchema: EXTRACTION_SCHEMA,
             maxOutputTokens: 4000,
           },
