@@ -4,7 +4,8 @@
   "description": "Proxy server for DTGPT — keeps the Gemini API key server-side.",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node tests/run-tests-v2.js"
   },
   "dependencies": {
     "@vercel/blob": "^2.3.1",

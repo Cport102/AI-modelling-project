@@ -463,6 +463,163 @@
     }
 
     /* ─── Chat Thread ────────────────────────────────────────────────────── */
+    #returns-card {
+      margin-top: 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    #returns-card h2 {
+      font-size: 16px;
+      margin-bottom: 12px;
+    }
+
+    .returns-grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    }
+
+    .returns-field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .returns-field label {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .returns-field input,
+    .returns-field select {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+      color: var(--text);
+      padding: 10px 12px;
+      font-size: 13px;
+    }
+
+    #returns-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    #returns-meta,
+    #returns-validation {
+      margin-top: 12px;
+      font-size: 13px;
+    }
+
+    #returns-meta {
+      color: var(--text-muted);
+    }
+
+    #returns-validation {
+      display: none;
+      background: var(--surface-hover);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+
+    #returns-validation.visible {
+      display: block;
+    }
+
+    #returns-validation ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    #returns-results {
+      display: none;
+      margin-top: 16px;
+      border-top: 1px solid var(--border);
+      padding-top: 16px;
+    }
+
+    #returns-results.visible {
+      display: block;
+    }
+
+    .returns-summary-grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      margin-bottom: 14px;
+    }
+
+    .returns-metric {
+      background: var(--surface-hover);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 14px;
+    }
+
+    .returns-metric span {
+      display: block;
+      font-size: 11.5px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 5px;
+    }
+
+    .returns-metric strong {
+      font-size: 16px;
+    }
+
+    #returns-bridge,
+    #returns-projection-wrap {
+      margin-top: 14px;
+    }
+
+    #returns-bridge-list {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    #returns-projection-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+    }
+
+    #returns-projection-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+      background: var(--surface);
+    }
+
+    #returns-projection-table th,
+    #returns-projection-table td {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    #returns-projection-table th {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      background: var(--surface-hover);
+    }
+
+    #returns-projection-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
     #messages {
       height: 220px;
       min-height: 140px;
@@ -1023,11 +1180,102 @@
           </div>
         </div>
       </div>
+
+      <div id="returns-card">
+        <h2>Returns model</h2>
+        <div class="returns-grid">
+          <div class="returns-field">
+            <label for="assumption-entry-date">Entry Date</label>
+            <input id="assumption-entry-date" type="date" />
+          </div>
+          <div class="returns-field">
+            <label for="assumption-fiscal-year-end-month">Fiscal Year-End Month</label>
+            <select id="assumption-fiscal-year-end-month">
+              <option value="1">January</option>
+              <option value="2">February</option>
+              <option value="3">March</option>
+              <option value="4">April</option>
+              <option value="5">May</option>
+              <option value="6">June</option>
+              <option value="7">July</option>
+              <option value="8">August</option>
+              <option value="9">September</option>
+              <option value="10">October</option>
+              <option value="11">November</option>
+              <option value="12">December</option>
+            </select>
+          </div>
+          <div class="returns-field">
+            <label for="assumption-entry-multiple">Entry Multiple</label>
+            <input id="assumption-entry-multiple" type="number" step="0.1" />
+          </div>
+          <div class="returns-field">
+            <label for="assumption-exit-multiple">Exit Multiple</label>
+            <input id="assumption-exit-multiple" type="number" step="0.1" />
+          </div>
+          <div class="returns-field">
+            <label for="assumption-leverage">Leverage</label>
+            <input id="assumption-leverage" type="number" step="0.1" />
+          </div>
+          <div class="returns-field">
+            <label for="assumption-minimum-cash">Minimum Cash</label>
+            <input id="assumption-minimum-cash" type="number" step="0.01" placeholder="Optional override" />
+          </div>
+          <div class="returns-field">
+            <label for="assumption-hold-years">Hold Years</label>
+            <input id="assumption-hold-years" type="number" step="1" min="1" />
+          </div>
+          <div class="returns-field">
+            <label for="assumption-pretax-ufcf-conversion">Pre-tax uFCF Conversion %</label>
+            <input id="assumption-pretax-ufcf-conversion" type="number" step="0.01" />
+          </div>
+        </div>
+
+        <div id="returns-actions">
+          <button class="secondary-btn" id="returns-run-btn" type="button">Run returns model</button>
+        </div>
+
+        <div id="returns-meta">Fixed constants: 10% interest, 30% tax, 1% advisory fees, 2% financing fees, 10% MIP on gross capital gain. Revenue and EBITDA come from CIM data; pre-tax uFCF conversion drives operating cash flow.</div>
+        <div id="returns-validation" role="alert">
+          <ul id="returns-validation-list"></ul>
+        </div>
+
+        <div id="returns-results">
+          <div class="returns-summary-grid" id="returns-summary-grid"></div>
+
+          <div id="returns-bridge" class="cim-result-block">
+            <h3>Value creation bridge</h3>
+            <ul id="returns-bridge-list"></ul>
+          </div>
+
+          <div id="returns-projection-wrap">
+            <table id="returns-projection-table">
+              <thead>
+                <tr>
+                  <th>Year</th>
+                  <th>Period</th>
+                  <th>Revenue</th>
+                  <th>EBITDA</th>
+                  <th>Margin</th>
+                  <th>Pre-tax uFCF Conversion</th>
+                  <th>Pretax UFCF</th>
+                  <th>Tax</th>
+                  <th>Interest</th>
+                  <th>Post-Tax CF</th>
+                  <th>Cash EOP</th>
+                </tr>
+              </thead>
+              <tbody id="returns-projection-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </section>
   </section>
 
 </div>
 
+<script src="returns-model-v2.js"></script>
 <script>
 // ═══════════════════════════════════════════════
 //  STATE
@@ -1082,6 +1330,22 @@ const cimTableBody = $('cim-table-body');
 const cimCopyJsonBtn = $('cim-copy-json-btn');
 const cimDownloadCsvBtn = $('cim-download-csv-btn');
 const cimSendChatBtn = $('cim-send-chat-btn');
+const returnsRunBtn = $('returns-run-btn');
+const returnsMeta = $('returns-meta');
+const returnsValidation = $('returns-validation');
+const returnsValidationList = $('returns-validation-list');
+const returnsResults = $('returns-results');
+const returnsSummaryGrid = $('returns-summary-grid');
+const returnsBridgeList = $('returns-bridge-list');
+const returnsProjectionBody = $('returns-projection-body');
+const assumptionEntryDate = $('assumption-entry-date');
+const assumptionFiscalYearEndMonth = $('assumption-fiscal-year-end-month');
+const assumptionEntryMultiple = $('assumption-entry-multiple');
+const assumptionExitMultiple = $('assumption-exit-multiple');
+const assumptionLeverage = $('assumption-leverage');
+const assumptionMinimumCash = $('assumption-minimum-cash');
+const assumptionHoldYears = $('assumption-hold-years');
+const assumptionPretaxUfcfConversion = $('assumption-pretax-ufcf-conversion');
 const messagesEl  = $('messages');
 const welcomeEl   = $('welcome');
 const typingEl    = $('typing-indicator');
@@ -1098,6 +1362,7 @@ const iconSun     = $('icon-sun');
 const iconMoon    = $('icon-moon');
 let cimExtractionResult = null;
 let cimStatusTimeout = null;
+let returnsModelResult = null;
 
 function setActiveView(view) {
   const showChat = view !== 'modelling';
@@ -1258,6 +1523,22 @@ function setCimError(message) {
   cimError.classList.toggle('visible', Boolean(message));
 }
 
+function setReturnsValidation(items) {
+  const values = Array.isArray(items) ? items.filter(Boolean) : [];
+  returnsValidation.classList.toggle('visible', values.length > 0);
+  returnsValidationList.innerHTML = values.map(value => `<li>${escapeHtml(String(value))}</li>`).join('');
+}
+
+function resetReturnsResults() {
+  returnsModelResult = null;
+  returnsMeta.textContent = 'Load a CIM extraction first, then review the assumptions and run the returns model.';
+  returnsResults.classList.remove('visible');
+  returnsSummaryGrid.innerHTML = '';
+  returnsBridgeList.innerHTML = '';
+  returnsProjectionBody.innerHTML = '';
+  setReturnsValidation([]);
+}
+
 function resetCimResults() {
   cimExtractionResult = null;
   cimResults.classList.remove('visible');
@@ -1268,6 +1549,27 @@ function resetCimResults() {
   cimCopyJsonBtn.disabled = true;
   cimDownloadCsvBtn.disabled = true;
   cimSendChatBtn.disabled = true;
+  resetReturnsResults();
+}
+
+function setInputValueIfEmpty(input, value) {
+  if (!input) return;
+  if (input.value !== '') return;
+  if (value === null || value === undefined || value === '') return;
+  input.value = String(value);
+}
+
+function populateReturnsDefaults(result) {
+  const structured = result?.structured || {};
+  const forecastYears = Array.isArray(structured.forecast_years) ? structured.forecast_years : [];
+
+  setInputValueIfEmpty(assumptionEntryDate, new Date().toISOString().slice(0, 10));
+  setInputValueIfEmpty(assumptionFiscalYearEndMonth, 6);
+  setInputValueIfEmpty(assumptionEntryMultiple, 20.0);
+  setInputValueIfEmpty(assumptionExitMultiple, 20.0);
+  setInputValueIfEmpty(assumptionLeverage, 4.5);
+  setInputValueIfEmpty(assumptionHoldYears, Math.max(3, forecastYears.length || 0, 5));
+  setInputValueIfEmpty(assumptionPretaxUfcfConversion, 90.0);
 }
 
 function renderStringList(listEl, values, emptyText) {
@@ -1279,6 +1581,43 @@ function formatCellValue(value) {
   if (value === null || value === undefined || value === '') return '—';
   if (typeof value === 'number') return Number.isInteger(value) ? String(value) : value.toFixed(2);
   return String(value);
+}
+
+function roundDisplayValue(value) {
+  return Math.round((Number(value) + Number.EPSILON) * 100) / 100;
+}
+
+function readOptionalNumber(input) {
+  const raw = input?.value?.trim();
+  if (!raw) return null;
+  const parsed = Number(raw.replace(/,/g, ''));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function getReturnsDisplayContext(result) {
+  return {
+    currency: result?.normalizedProfile?.currency || '',
+    units: result?.normalizedProfile?.sourceUnits || 'ones',
+    multiplier: result?.normalizedProfile?.unitMultiplier || 1,
+  };
+}
+
+function formatReturnsMoney(value, result) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return 'â€”';
+  const context = getReturnsDisplayContext(result);
+  const scaledValue = Number(value) / context.multiplier;
+  const prefix = context.currency ? `${context.currency} ` : '';
+  return `${prefix}${scaledValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+}
+
+function formatReturnsPercent(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return 'â€”';
+  return `${(Number(value) * 100).toFixed(1)}%`;
+}
+
+function formatReturnsMultiple(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return 'â€”';
+  return `${Number(value).toFixed(2)}x`;
 }
 
 function renderCimTable(rows) {
@@ -1317,6 +1656,137 @@ function renderCimResults(result) {
   renderStringList(cimWarnings, structured.warnings, 'No warnings returned.');
   renderStringList(cimAssumptions, structured.assumptions, 'No assumptions returned.');
   renderCimTable(result.rows || []);
+  populateReturnsDefaults(result);
+  runReturnsModel();
+}
+
+function collectReturnsAssumptions() {
+  return {
+    entryDate: assumptionEntryDate.value || null,
+    fiscalYearEndMonth: readOptionalNumber(assumptionFiscalYearEndMonth),
+    entryMultiple: readOptionalNumber(assumptionEntryMultiple),
+    exitMultiple: readOptionalNumber(assumptionExitMultiple),
+    leverage: readOptionalNumber(assumptionLeverage),
+    minimumCashInSourceUnits: readOptionalNumber(assumptionMinimumCash),
+    holdYears: readOptionalNumber(assumptionHoldYears),
+    pretaxUfcfConversion: readOptionalNumber(assumptionPretaxUfcfConversion),
+  };
+}
+
+function renderReturnsSummary(result) {
+  const summaryItems = [
+    ['Entry EV', formatReturnsMoney(result.entry?.entryEv, result)],
+    ['Sponsor Equity', formatReturnsMoney(result.entry?.pfEquity, result)],
+    ['Exit EV', formatReturnsMoney(result.exit?.exitEv, result)],
+    ['Exit Equity', formatReturnsMoney(result.exit?.pfEquityExit, result)],
+    ['Gross Capital Gain', formatReturnsMoney(result.exit?.grossCapitalGain, result)],
+    ['MIP Deduction', formatReturnsMoney(result.exit?.mip, result)],
+    ['MoM', formatReturnsMultiple(result.returns?.mom)],
+    ['IRR', formatReturnsPercent(result.returns?.irr)],
+  ];
+
+  returnsSummaryGrid.innerHTML = summaryItems.map(([label, value]) => `
+    <div class="returns-metric">
+      <span>${escapeHtml(label)}</span>
+      <strong>${escapeHtml(value)}</strong>
+    </div>
+  `).join('');
+}
+
+function renderReturnsBridge(result) {
+  const bridge = result.valueCreationBridge || {};
+  const items = [
+    `Initial sponsor equity: ${formatReturnsMoney(bridge.initialSponsorEquity, result)}`,
+    `EBITDA growth effect: ${formatReturnsMoney(bridge.ebitdaGrowthEffect, result)}`,
+    `Multiple effect: ${formatReturnsMoney(bridge.multipleEffect, result)}`,
+    `Debt / cash movement: ${formatReturnsMoney(bridge.debtAndCashMovement, result)}`,
+    `Fixed fees impact (1% advisory, 2% financing): ${formatReturnsMoney(bridge.feesImpact, result)}`,
+    `MIP impact (10% of gross capital gain): ${formatReturnsMoney(bridge.mipImpact, result)}`,
+    `Final sponsor equity: ${formatReturnsMoney(bridge.finalSponsorEquity, result)}`,
+  ];
+
+  returnsBridgeList.innerHTML = items.map(item => `<li>${escapeHtml(item)}</li>`).join('');
+}
+
+function renderReturnsProjection(result) {
+  const rows = (result.operatingProjection || []).slice();
+  const lastRow = rows.length ? rows[rows.length - 1] : null;
+
+  if (result.exit?.exitForwardPeriodLabel && (!lastRow || lastRow.periodLabel !== result.exit.exitForwardPeriodLabel)) {
+    rows.push({
+      year: (lastRow?.year || 0) + 1,
+      periodLabel: result.exit.exitForwardPeriodLabel,
+      revenue: result.exit.exitForwardRevenue,
+      ebitda: result.exit.finalYearEbitda,
+      ebitdaMargin: result.exit.exitForwardMargin,
+      pretaxUfcfConversion: null,
+      pretaxUfcf: null,
+      tax: null,
+      interest: null,
+      postTaxCashFlow: null,
+      cashEop: null,
+      isExitForward: true,
+    });
+  }
+
+  returnsProjectionBody.innerHTML = rows.map(row => `
+    <tr>
+      <td>${escapeHtml(formatCellValue(row.year))}</td>
+      <td>${escapeHtml(formatCellValue(row.periodLabel))}</td>
+      <td>${escapeHtml(formatReturnsMoney(row.revenue, result))}</td>
+      <td>${escapeHtml(formatReturnsMoney(row.ebitda, result))}</td>
+      <td>${escapeHtml(formatReturnsPercent(row.ebitdaMargin))}</td>
+      <td>${escapeHtml(formatReturnsPercent(row.pretaxUfcfConversion))}</td>
+      <td>${escapeHtml(formatReturnsMoney(row.pretaxUfcf, result))}</td>
+      <td>${escapeHtml(formatReturnsMoney(row.tax, result))}</td>
+      <td>${escapeHtml(formatReturnsMoney(row.interest, result))}</td>
+      <td>${escapeHtml(formatReturnsMoney(row.postTaxCashFlow, result))}</td>
+      <td>${escapeHtml(formatReturnsMoney(row.cashEop, result))}</td>
+    </tr>
+  `).join('');
+}
+
+function runReturnsModel() {
+  if (!cimExtractionResult) {
+    resetReturnsResults();
+    setReturnsValidation(['Upload and extract a CIM before running the returns model.']);
+    return;
+  }
+
+  if (!window.ReturnsModel || typeof window.ReturnsModel.calculateReturns !== 'function') {
+    setReturnsValidation(['Shared returns model script failed to load.']);
+    returnsMeta.textContent = '';
+    returnsResults.classList.remove('visible');
+    return;
+  }
+
+  try {
+    const assumptions = collectReturnsAssumptions();
+    const result = window.ReturnsModel.calculateReturns(cimExtractionResult, assumptions);
+    const messages = (result.validation?.errors || []).concat(result.validation?.warnings || []);
+    const context = getReturnsDisplayContext(result);
+    const constants = result.constants || {};
+    const fiscalYearEndText = result.assumptions?.fiscalYearEndMonth ? ` Fiscal year-end month: ${result.assumptions.fiscalYearEndMonth}.` : '';
+    const entryPeriodText = result.entry?.ntmPeriodLabel ? ` Entry EV uses blended NTM EBITDA based on ${result.entry.ntmPeriodLabel}.` : '';
+    const exitPeriodText = result.exit?.exitForwardPeriodLabel ? ` Exit EV uses ${result.exit.exitForwardPeriodLabel}.` : '';
+
+    returnsModelResult = result;
+    returnsMeta.textContent = `Displayed in ${context.units}${context.currency ? ` (${context.currency})` : ''}. Fixed constants: ${(constants.interestRate || 0) * 100}% interest, ${(constants.taxRate || 0) * 100}% tax, ${(constants.advisoryFeesPct || 0) * 100}% advisory fees, ${(constants.financingFeesPct || 0) * 100}% financing fees, ${(constants.mipPct || 0) * 100}% MIP on gross capital gain. Revenue and EBITDA are sourced from CIM data; pre-tax uFCF conversion is the operating cash driver.${fiscalYearEndText}${entryPeriodText}${exitPeriodText}`;
+    setReturnsValidation(messages);
+
+    if (result.validation?.errors?.length) {
+      returnsResults.classList.remove('visible');
+      return;
+    }
+
+    renderReturnsSummary(result);
+    renderReturnsBridge(result);
+    renderReturnsProjection(result);
+    returnsResults.classList.add('visible');
+  } catch (error) {
+    returnsResults.classList.remove('visible');
+    setReturnsValidation([error?.message || 'Returns model failed in the browser.']);
+  }
 }
 
 function buildCsv(rows) {
@@ -1825,6 +2295,10 @@ cimCopyJsonBtn.addEventListener('click', async () => {
   setCimStatus('Structured JSON copied.');
 });
 
+returnsRunBtn.addEventListener('click', () => {
+  runReturnsModel();
+});
+
 cimDownloadCsvBtn.addEventListener('click', () => {
   downloadCimCsv();
   setCimStatus('CSV download started.');
@@ -1857,6 +2331,7 @@ newChatBtn.addEventListener('click', () => {
 (async () => {
   await loadRuntimeConfig();
   setActiveView(window.location.hash === '#modelling' ? 'modelling' : 'chat');
+  resetReturnsResults();
   userInput.focus();
   checkBackendHealth();
 })();

@@ -7,6 +7,7 @@ const { URL } = require('url');
 const { DAN_PROMPT } = require('./dan-prompt');
 const { parseMultipartPdf } = require('./multipart-parser');
 const { extractCimDataFromPdf } = require('./cim-extraction');
+const { calculateReturns } = require('./returns-model-v2');
 const { deleteBlobIfPresent, isTrustedBlobUrl } = require('./blob-storage');
 const { issueCimAccessToken, DEFAULT_TOKEN_LIFETIME_SECONDS } = require('./cim-access-token');
 
@@ -299,6 +300,33 @@ async function handleCimExtraction(req, res) {
   }
 }
 
+async function handleReturnsCalculation(req, res) {
+  if (!isAllowedOrigin(req)) {
+    sendJson(res, 403, { error: 'Origin not allowed.' });
+    return;
+  }
+
+  let payload;
+  try {
+    payload = await readJsonBody(req);
+  } catch (error) {
+    const statusCode = error.message === 'Invalid JSON body' ? 400 : 413;
+    sendJson(res, statusCode, { error: error.message });
+    return;
+  }
+
+  const extractedProfile = payload.extractedProfile || payload.profile || null;
+  const assumptions = payload.assumptions || {};
+
+  if (!extractedProfile) {
+    sendJson(res, 400, { error: 'extractedProfile is required.' });
+    return;
+  }
+
+  const result = calculateReturns(extractedProfile, assumptions);
+  sendJson(res, result.validation.errors.length ? 422 : 200, result);
+}
+
 function handleLogin(req, res) {
   sendJson(res, 200, { ok: true, authDisabled: true });
 }
@@ -375,6 +403,20 @@ const server = http.createServer(async (req, res) => {
     }
 
     await handleCimExtraction(req, res);
+    return;
+  }
+
+  if (pathname === '/api/calculate-returns') {
+    if (req.method !== 'POST') {
+      sendJson(res, 405, { error: 'Method not allowed' });
+      return;
+    }
+
+    if (!enforceRateLimit(req, res)) {
+      return;
+    }
+
+    await handleReturnsCalculation(req, res);
     return;
   }
 
