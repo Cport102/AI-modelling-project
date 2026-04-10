@@ -487,6 +487,33 @@ function coerceStructuredResultShape(result) {
   };
 }
 
+function normalizeJsonLikeCandidate(value) {
+  let text = sanitizeJsonCandidate(value)
+    .replace(/^\s*json\s*/i, '')
+    .replace(/[\u201c\u201d]/g, '"')
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u00A0\u202F]/g, ' ')
+    .replace(/\/\/[^\n\r]*/g, '')
+    .replace(/\/\*[\s\S]*?\*\//g, '');
+
+  if (text.startsWith('"') && text.endsWith('"')) {
+    try {
+      const unwrapped = JSON.parse(text);
+      if (typeof unwrapped === 'string') {
+        text = sanitizeJsonCandidate(unwrapped);
+      }
+    } catch {
+      // Keep the original candidate if it was not a JSON string wrapper.
+    }
+  }
+
+  text = text
+    .replace(/([{,]\s*)([A-Za-z0-9_]+)\s*:/g, '$1"$2":')
+    .replace(/:\s*'([^'\\]*(?:\\.[^'\\]*)*)'/g, (_match, group) => `: "${group.replace(/"/g, '\\"')}"`);
+
+  return text;
+}
+
 function extractFirstJsonObject(value) {
   const text = stripMarkdownCodeFences(value);
   const start = text.indexOf('{');
@@ -542,11 +569,7 @@ function parseGeminiJsonResponse(responseText) {
   try {
     return coerceStructuredResultShape(JSON.parse(candidate));
   } catch {
-    const sanitizedCandidate = sanitizeJsonCandidate(candidate)
-      .replace(/```json|```/gi, '')
-      .replace(/[\u201c\u201d]/g, '"')
-      .replace(/[\u2018\u2019]/g, "'")
-      .replace(/[\u00A0\u202F]/g, ' ');
+    const sanitizedCandidate = normalizeJsonLikeCandidate(candidate).replace(/```json|```/gi, '');
 
     try {
       return coerceStructuredResultShape(JSON.parse(sanitizedCandidate));
