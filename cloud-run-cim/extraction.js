@@ -1,4 +1,8 @@
 const EXTRACTION_MODEL = process.env.GEMINI_EXTRACTION_MODEL || 'gemini-2.5-flash';
+const EXTRACTION_MODEL_FALLBACKS = (process.env.GEMINI_EXTRACTION_MODEL_FALLBACKS || 'gemini-2.5-flash-lite')
+  .split(',')
+  .map((value) => value.trim())
+  .filter(Boolean);
 
 const EXTRACTION_PROMPT = `You are extracting financial data from a bankers' sellside CIM / management plan PDF.
 
@@ -96,6 +100,144 @@ const EXTRACTION_SCHEMA = {
     'forecast_years',
   ],
 };
+
+function toGeminiSchema(schema) {
+  if (!schema || typeof schema !== 'object' || Array.isArray(schema)) {
+    throw new Error('Invalid extraction schema definition.');
+  }
+
+  const geminiSchema = {};
+  const rawType = schema.type;
+  const typeList = Array.isArray(rawType) ? rawType : rawType ? [rawType] : [];
+  const nonNullTypes = typeList.filter((value) => value !== 'null');
+
+  if (nonNullTypes.length > 1) {
+    throw new Error(`Gemini schema does not support multiple non-null types: ${nonNullTypes.join(', ')}`);
+  }
+
+  const primaryType = nonNullTypes[0];
+  if (primaryType) {
+    geminiSchema.type = primaryType.toUpperCase();
+  }
+
+  if (typeList.includes('null')) {
+    geminiSchema.nullable = true;
+  }
+
+  if (schema.enum) {
+    geminiSchema.enum = schema.enum.filter((value) => value !== null);
+  }
+
+  if (typeof schema.minimum === 'number') {
+    geminiSchema.minimum = schema.minimum;
+  }
+
+  if (typeof schema.maximum === 'number') {
+    geminiSchema.maximum = schema.maximum;
+  }
+
+  if (schema.properties && typeof schema.properties === 'object') {
+    geminiSchema.properties = Object.fromEntries(
+      Object.entries(schema.properties).map(([key, value]) => [key, toGeminiSchema(value)])
+    );
+  }
+
+  if (Array.isArray(schema.required)) {
+    geminiSchema.required = schema.required;
+  }
+
+  if (schema.items) {
+    geminiSchema.items = toGeminiSchema(schema.items);
+  }
+
+  return geminiSchema;
+}
+
+const GEMINI_EXTRACTION_SCHEMA = toGeminiSchema(EXTRACTION_SCHEMA);
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function parseRetryAfterSeconds(value) {
+  if (!value) return null;
+  const seconds = Number(value);
+  if (Number.isFinite(seconds) && seconds >= 0) {
+    return seconds;
+  }
+
+  const retryDate = Date.parse(value);
+  if (Number.isNaN(retryDate)) return null;
+  return Math.max(0, Math.ceil((retryDate - Date.now()) / 1000));
+}
+
+async function requestExtractionWithRetries({ apiKey, uploadedFile }) {
+  const models = [EXTRACTION_MODEL, ...EXTRACTION_MODEL_FALLBACKS.filter((model) => model !== EXTRACTION_MODEL)];
+  let lastTemporaryError = null;
+
+  for (const model of models) {
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      const generationResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+        {
+          method: 'POST',
+          headers: {
+            'x-goog-api-key': apiKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                role: 'user',
+                parts: [
+                  {
+                    file_data: {
+                      mime_type: uploadedFile.mimeType || 'application/pdf',
+                      file_uri: uploadedFile.uri,
+                    },
+                  },
+                  {
+                    text: EXTRACTION_PROMPT,
+                  },
+                ],
+              },
+            ],
+            generationConfig: {
+              responseMimeType: 'application/json',
+              responseSchema: GEMINI_EXTRACTION_SCHEMA,
+              maxOutputTokens: 4000,
+            },
+          }),
+        }
+      );
+
+      if (generationResponse.ok) {
+        return generationResponse;
+      }
+
+      const body = await generationResponse.text();
+      const isTemporary = generationResponse.status === 503 || generationResponse.status === 429;
+
+      if (!isTemporary) {
+        throw new Error(`Gemini extraction failed: ${body || generationResponse.status}`);
+      }
+
+      lastTemporaryError = body || String(generationResponse.status);
+      const retryAfterSeconds = parseRetryAfterSeconds(generationResponse.headers.get('retry-after'));
+
+      if (attempt < 3) {
+        const backoffMs = retryAfterSeconds
+          ? retryAfterSeconds * 1000
+          : Math.min(1500 * 2 ** (attempt - 1), 6000);
+        await sleep(backoffMs);
+      }
+    }
+  }
+
+  throw new Error(
+    `Gemini extraction is temporarily unavailable due to provider load. Please retry in a minute.${lastTemporaryError ? ` Last provider response: ${lastTemporaryError}` : ''}`
+  );
+}
 
 function assertApiKey() {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -245,6 +387,58 @@ function sanitizeJsonCandidate(value) {
     .trim();
 }
 
+function closeOpenJsonStructures(value) {
+  const text = String(value || '');
+  let inString = false;
+  let escaped = false;
+  const stack = [];
+
+  for (let i = 0; i < text.length; i += 1) {
+    const char = text[i];
+
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (char === '\\') {
+        escaped = true;
+      } else if (char === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      inString = true;
+      continue;
+    }
+
+    if (char === '{') stack.push('}');
+    if (char === '[') stack.push(']');
+    if ((char === '}' || char === ']') && stack.length && stack[stack.length - 1] === char) {
+      stack.pop();
+    }
+  }
+
+  return text + stack.reverse().join('');
+}
+
+function coerceStructuredResultShape(result) {
+  if (!result || typeof result !== 'object' || Array.isArray(result)) {
+    return result;
+  }
+
+  return {
+    company_name: result.company_name ?? null,
+    source_table_name: result.source_table_name ?? null,
+    currency: result.currency ?? null,
+    units: result.units ?? null,
+    assumptions: Array.isArray(result.assumptions) ? result.assumptions : [],
+    warnings: Array.isArray(result.warnings) ? result.warnings : [],
+    historical_years: Array.isArray(result.historical_years) ? result.historical_years : [],
+    forecast_years: Array.isArray(result.forecast_years) ? result.forecast_years : [],
+  };
+}
+
 function extractFirstJsonObject(value) {
   const text = stripMarkdownCodeFences(value);
   const start = text.indexOf('{');
@@ -298,15 +492,25 @@ function parseGeminiJsonResponse(responseText) {
   const candidate = extractFirstJsonObject(responseText);
 
   try {
-    return JSON.parse(candidate);
+    return coerceStructuredResultShape(JSON.parse(candidate));
   } catch {
-    const sanitizedCandidate = sanitizeJsonCandidate(candidate);
+    const sanitizedCandidate = sanitizeJsonCandidate(candidate)
+      .replace(/```json|```/gi, '')
+      .replace(/[\u201c\u201d]/g, '"')
+      .replace(/[\u2018\u2019]/g, "'")
+      .replace(/[\u00A0\u202F]/g, ' ');
 
     try {
-      return JSON.parse(sanitizedCandidate);
+      return coerceStructuredResultShape(JSON.parse(sanitizedCandidate));
     } catch {
-      console.error('Gemini extraction parse failure:', candidate.slice(0, 1000));
-      throw new Error('Gemini returned invalid JSON.');
+      const repairedCandidate = closeOpenJsonStructures(sanitizedCandidate);
+
+      try {
+        return coerceStructuredResultShape(JSON.parse(repairedCandidate));
+      } catch {
+        console.error('Gemini extraction parse failure:', candidate.slice(0, 1000));
+        throw new Error('Gemini returned invalid JSON.');
+      }
     }
   }
 }
@@ -473,45 +677,7 @@ async function extractCimDataFromPdf(file) {
     uploadedFile = await uploadGeminiFile({ apiKey, file });
     uploadedFile = await waitForFileActive({ apiKey, fileName: uploadedFile.name });
 
-    const generationResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(EXTRACTION_MODEL)}:generateContent`,
-      {
-        method: 'POST',
-        headers: {
-          'x-goog-api-key': apiKey,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: 'user',
-              parts: [
-                {
-                  file_data: {
-                    mime_type: uploadedFile.mimeType || 'application/pdf',
-                    file_uri: uploadedFile.uri,
-                  },
-                },
-                {
-                  text: EXTRACTION_PROMPT,
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            responseMimeType: 'application/json',
-            responseSchema: EXTRACTION_SCHEMA,
-            responseJsonSchema: EXTRACTION_SCHEMA,
-            maxOutputTokens: 4000,
-          },
-        }),
-      }
-    );
-
-    if (!generationResponse.ok) {
-      const body = await generationResponse.text();
-      throw new Error(`Gemini extraction failed: ${body || generationResponse.status}`);
-    }
+    const generationResponse = await requestExtractionWithRetries({ apiKey, uploadedFile });
 
     const responseJson = await generationResponse.json();
     const responseText = getResponseText(responseJson);

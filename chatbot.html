@@ -1112,10 +1112,6 @@
               <h3>Warnings</h3>
               <ul id="cim-warnings"></ul>
             </div>
-            <div class="cim-result-block">
-              <h3>Assumptions</h3>
-              <ul id="cim-assumptions"></ul>
-            </div>
           </div>
 
           <div id="cim-actions">
@@ -1126,20 +1122,6 @@
 
           <div id="cim-table-wrap">
             <table id="cim-table">
-              <thead>
-                <tr>
-                  <th>Period</th>
-                  <th>Type</th>
-                  <th>Revenue</th>
-                  <th>Gross Profit</th>
-                  <th>EBITDA</th>
-                  <th>Currency</th>
-                  <th>Units</th>
-                  <th>Source Page</th>
-                  <th>Confidence</th>
-                  <th>Notes</th>
-                </tr>
-              </thead>
               <tbody id="cim-table-body"></tbody>
             </table>
           </div>
@@ -1280,7 +1262,6 @@ const cimError = $('cim-error');
 const cimMeta = $('cim-meta');
 const cimResults = $('cim-results');
 const cimWarnings = $('cim-warnings');
-const cimAssumptions = $('cim-assumptions');
 const cimTableBody = $('cim-table-body');
 const cimCopyJsonBtn = $('cim-copy-json-btn');
 const cimDownloadCsvBtn = $('cim-download-csv-btn');
@@ -1486,7 +1467,6 @@ function resetCimResults() {
   cimResults.classList.remove('visible');
   cimMeta.textContent = '';
   cimWarnings.innerHTML = '';
-  cimAssumptions.innerHTML = '';
   cimTableBody.innerHTML = '';
   cimCopyJsonBtn.disabled = true;
   cimDownloadCsvBtn.disabled = true;
@@ -1523,6 +1503,13 @@ function formatCellValue(value) {
   if (value === null || value === undefined || value === '') return '—';
   if (typeof value === 'number') return Number.isInteger(value) ? String(value) : value.toFixed(2);
   return String(value);
+}
+
+function getDisplayRows(rows) {
+  return (Array.isArray(rows) ? rows : []).map(row => ({
+    ...row,
+    displayPeriod: row.type ? `${row.period_label} (${row.type})` : row.period_label,
+  }));
 }
 
 function roundDisplayValue(value) {
@@ -1577,18 +1564,19 @@ function formatReturnsMultiple(value) {
 }
 
 function renderCimTable(rows) {
-  cimTableBody.innerHTML = rows.map(row => `
+  const displayRows = getDisplayRows(rows);
+  const matrixRows = [
+    ['Period', ...displayRows.map(row => formatCellValue(row.displayPeriod))],
+    ['Revenue', ...displayRows.map(row => formatCellValue(row.revenue))],
+    ['Gross Profit', ...displayRows.map(row => formatCellValue(row.gross_profit))],
+    ['EBITDA', ...displayRows.map(row => formatCellValue(row.ebitda))],
+  ];
+
+  cimTableBody.innerHTML = matrixRows.map(row => `
     <tr>
-      <td>${escapeHtml(formatCellValue(row.period_label))}</td>
-      <td>${escapeHtml(formatCellValue(row.type))}</td>
-      <td>${escapeHtml(formatCellValue(row.revenue))}</td>
-      <td>${escapeHtml(formatCellValue(row.gross_profit))}</td>
-      <td>${escapeHtml(formatCellValue(row.ebitda))}</td>
-      <td>${escapeHtml(formatCellValue(row.currency))}</td>
-      <td>${escapeHtml(formatCellValue(row.units))}</td>
-      <td>${escapeHtml(formatCellValue(row.source_page))}</td>
-      <td>${escapeHtml(formatCellValue(row.confidence))}</td>
-      <td>${escapeHtml(formatCellValue(row.notes))}</td>
+      ${row.map((value, index) => index === 0
+        ? `<th scope="row">${escapeHtml(value)}</th>`
+        : `<td>${escapeHtml(value)}</td>`).join('')}
     </tr>
   `).join('');
 }
@@ -1610,7 +1598,6 @@ function renderCimResults(result) {
   cimMeta.textContent = metaParts.join(' · ');
 
   renderStringList(cimWarnings, structured.warnings, 'No warnings returned.');
-  renderStringList(cimAssumptions, structured.assumptions, 'No assumptions returned.');
   renderCimTable(result.rows || []);
   populateReturnsDefaults(result);
   runReturnsModel();
