@@ -112,6 +112,11 @@
     return roundRatio(ebitda / revenue);
   }
 
+  function deriveGrossMargin(revenue, grossProfit) {
+    if (!isFiniteNumber(revenue) || !isFiniteNumber(grossProfit) || revenue === 0) return null;
+    return roundRatio(grossProfit / revenue);
+  }
+
   function parseFiscalYear(periodLabel) {
     const text = String(periodLabel || '').trim();
     if (!text) return null;
@@ -185,6 +190,33 @@
     return Math.pow(lastRevenue / firstRevenue, 1 / periods) - 1;
   }
 
+  function deriveLatestRevenueGrowthRate(periodRows) {
+    const rows = (periodRows || []).filter(row => isFiniteNumber(row.revenue) && row.revenue > 0);
+    if (rows.length < 2) return null;
+
+    const previousRevenue = rows[rows.length - 2].revenue;
+    const latestRevenue = rows[rows.length - 1].revenue;
+    if (!isFiniteNumber(previousRevenue) || !isFiniteNumber(latestRevenue) || previousRevenue <= 0 || latestRevenue <= 0) {
+      return null;
+    }
+
+    return (latestRevenue / previousRevenue) - 1;
+  }
+
+  function deriveLatestKnownMargin(periodRows) {
+    const rows = (periodRows || []).filter(row => isFiniteNumber(row.revenue) && row.revenue !== 0 && isFiniteNumber(row.ebitda));
+    if (!rows.length) return null;
+    const latestRow = rows[rows.length - 1];
+    return deriveMargin(latestRow.revenue, latestRow.ebitda);
+  }
+
+  function deriveLatestKnownGrossMargin(periodRows) {
+    const rows = (periodRows || []).filter(row => isFiniteNumber(row.revenue) && row.revenue !== 0 && isFiniteNumber(row.grossProfit));
+    if (!rows.length) return null;
+    const latestRow = rows[rows.length - 1];
+    return deriveGrossMargin(latestRow.revenue, latestRow.grossProfit);
+  }
+
   function getFiscalYearForDate(date, fiscalYearEndMonth) {
     if (!(date instanceof Date) || Number.isNaN(date.getTime())) return null;
     const month = date.getUTCMonth() + 1;
@@ -219,6 +251,7 @@
     const multiplier = getMultiplier(units, warnings);
     const historicalRows = clonePeriodRows(structured.historical_years || profile?.historical_years, 'Historical', multiplier);
     const forecastRows = clonePeriodRows(structured.forecast_years || profile?.forecast_years, 'Forecast', multiplier);
+    const allKnownPeriods = historicalRows.concat(forecastRows);
     const latestHistorical = historicalRows.length ? historicalRows[historicalRows.length - 1] : null;
     const firstForecast = forecastRows.length ? forecastRows[0] : null;
     const extractedWarnings = Array.isArray(structured.warnings) ? structured.warnings.slice() : [];
@@ -235,15 +268,25 @@
       extractedAssumptions,
       extractedWarnings,
       normalizationWarnings: warnings,
-      historicalPeriods: historicalRows.map(row => ({ ...row, ebitdaMargin: deriveMargin(row.revenue, row.ebitda) })),
-      forecastPeriods: forecastRows.map(row => ({ ...row, ebitdaMargin: deriveMargin(row.revenue, row.ebitda) })),
+      historicalPeriods: historicalRows.map(row => ({
+        ...row,
+        grossMargin: deriveGrossMargin(row.revenue, row.grossProfit),
+        ebitdaMargin: deriveMargin(row.revenue, row.ebitda),
+      })),
+      forecastPeriods: forecastRows.map(row => ({
+        ...row,
+        grossMargin: deriveGrossMargin(row.revenue, row.grossProfit),
+        ebitdaMargin: deriveMargin(row.revenue, row.ebitda),
+      })),
       ltmRevenue: latestHistorical ? latestHistorical.revenue : null,
       ltmEbitda: latestHistorical ? latestHistorical.ebitda : null,
       ntmRevenue: firstForecast ? firstForecast.revenue : null,
       ntmEbitda: firstForecast ? firstForecast.ebitda : null,
       latestHistoricalPeriodLabel: latestHistorical ? latestHistorical.periodLabel : null,
       firstForecastPeriodLabel: firstForecast ? firstForecast.periodLabel : null,
-      latestKnownMargin: latestHistorical ? deriveMargin(latestHistorical.revenue, latestHistorical.ebitda) : null,
+      latestKnownMargin: deriveLatestKnownMargin(allKnownPeriods),
+      latestKnownGrossMargin: deriveLatestKnownGrossMargin(allKnownPeriods),
+      latestRevenueGrowthRate: deriveLatestRevenueGrowthRate(allKnownPeriods),
       historicalRevenueGrowthRate: deriveHistoricalRevenueGrowthRate(historicalRows),
     };
   }
@@ -339,6 +382,12 @@
       warnings,
       { percent: true, allowNegative: true }
     );
+    const mipPct = normalizeRate(
+      input.mipPct || input.mepPct || input.managementEquityPlanPct,
+      'mipPct',
+      warnings,
+      { percent: true, allowNegative: false }
+    );
 
     for (const [field, value] of Object.entries({ pretaxUfcfConversionRates })) {
       if (value && value.error) {
@@ -348,8 +397,16 @@
       }
     }
 
+    if (mipPct !== null) {
+      resolved.mipPct = mipPct;
+    }
+
     if (!resolved.pretaxUfcfConversionRates) {
       errors.push('pretaxUfcfConversion is required.');
+    }
+
+    if (isFiniteNumber(resolved.mipPct) && (resolved.mipPct < 0 || resolved.mipPct > 1)) {
+      errors.push('mipPct must be between 0% and 100%.');
     }
 
     return { resolved, warnings, errors };
@@ -455,14 +512,26 @@
     return matchingWeight ? matchingWeight.weight : 1;
   }
 
-  function resolveProjectedPeriod(profile, targetFiscalYear, previousRevenue, previousMargin, warnings) {
+  function resolveProjectedPeriod(profile, targetFiscalYear, previousRevenue, previousMargin, previousGrossMargin, warnings) {
     const extractedForecast = findPeriodByFiscalYear(profile.forecastPeriods, targetFiscalYear);
     if (extractedForecast && isFiniteNumber(extractedForecast.revenue) && isFiniteNumber(extractedForecast.ebitda)) {
+      const grossMargin = isFiniteNumber(extractedForecast.grossMargin)
+        ? extractedForecast.grossMargin
+        : isFiniteNumber(previousGrossMargin)
+          ? previousGrossMargin
+          : profile.latestKnownGrossMargin;
+      const grossProfit = isFiniteNumber(extractedForecast.grossProfit)
+        ? extractedForecast.grossProfit
+        : isFiniteNumber(grossMargin)
+          ? extractedForecast.revenue * grossMargin
+          : null;
       return {
         periodLabel: extractedForecast.periodLabel,
         fiscalYear: extractedForecast.fiscalYear,
         revenue: extractedForecast.revenue,
+        grossProfit,
         ebitda: extractedForecast.ebitda,
+        grossMargin,
         margin: deriveMargin(extractedForecast.revenue, extractedForecast.ebitda),
         source: 'CIM forecast',
       };
@@ -472,19 +541,26 @@
       return null;
     }
 
-    const revenueGrowthRate = isFiniteNumber(profile.historicalRevenueGrowthRate) ? profile.historicalRevenueGrowthRate : 0;
+    const revenueGrowthRate = isFiniteNumber(profile.latestRevenueGrowthRate)
+      ? profile.latestRevenueGrowthRate
+      : isFiniteNumber(profile.historicalRevenueGrowthRate)
+        ? profile.historicalRevenueGrowthRate
+        : 0;
     const revenue = previousRevenue * (1 + revenueGrowthRate);
     const margin = isFiniteNumber(previousMargin) ? previousMargin : profile.latestKnownMargin;
+    const grossMargin = isFiniteNumber(previousGrossMargin) ? previousGrossMargin : profile.latestKnownGrossMargin;
     if (!isFiniteNumber(margin)) {
       return null;
     }
 
-    warnings.push(`Fiscal year ${targetFiscalYear} was extrapolated using historical revenue growth and a constant EBITDA margin.`);
+    warnings.push(`Fiscal year ${targetFiscalYear} was extrapolated using the latest provided CIM revenue growth and a constant EBITDA margin.`);
     return {
       periodLabel: `FY${String(targetFiscalYear).slice(-2)}E`,
       fiscalYear: targetFiscalYear,
       revenue,
+      grossProfit: isFiniteNumber(grossMargin) ? revenue * grossMargin : null,
       ebitda: revenue * margin,
+      grossMargin,
       margin,
       source: 'Extrapolated',
     };
@@ -546,10 +622,11 @@
     let previousMargin = profile.latestKnownMargin;
     let previousCash = entry.minimumCash;
     const debtBalance = entry.debt;
+    let previousGrossMargin = profile.latestKnownGrossMargin;
 
     for (let yearIndex = 0; yearIndex < assumptions.holdYears; yearIndex += 1) {
       const targetFiscalYear = entryFiscalYear + yearIndex;
-      const projectedPeriod = resolveProjectedPeriod(profile, targetFiscalYear, previousRevenue, previousMargin, warnings);
+      const projectedPeriod = resolveProjectedPeriod(profile, targetFiscalYear, previousRevenue, previousMargin, previousGrossMargin, warnings);
 
       if (!projectedPeriod || !isFiniteNumber(projectedPeriod.revenue) || !isFiniteNumber(projectedPeriod.ebitda)) {
         throw new Error(`Unable to build operating projection for year ${yearIndex + 1}.`);
@@ -559,9 +636,10 @@
       const capexRate = (1 - pretaxUfcfConversion) * 0.5;
       const capex = projectedPeriod.ebitda * capexRate;
       const ebit = projectedPeriod.ebitda - capex;
+      const sgna = isFiniteNumber(projectedPeriod.grossProfit) ? projectedPeriod.grossProfit - projectedPeriod.ebitda : null;
       const pretaxUfcf = projectedPeriod.ebitda * pretaxUfcfConversion;
       const interest = debtBalance * assumptions.interestRate;
-      const tax = Math.max(ebit, 0) * assumptions.taxRate;
+      const tax = Math.max(pretaxUfcf - interest, 0) * assumptions.taxRate;
       const postTaxCashFlow = pretaxUfcf - interest - tax;
       const cashAccrualFactor = yearIndex === 0 ? firstYearCashAccrualFactor : 1;
       const realizedPostTaxCashFlow = postTaxCashFlow * cashAccrualFactor;
@@ -572,6 +650,9 @@
         periodLabel: projectedPeriod.periodLabel,
         fiscalYear: projectedPeriod.fiscalYear,
         revenue: roundCurrency(projectedPeriod.revenue),
+        grossProfit: roundCurrency(projectedPeriod.grossProfit),
+        grossMargin: roundRatio(projectedPeriod.grossMargin),
+        sgna: roundCurrency(sgna),
         ebitda: roundCurrency(projectedPeriod.ebitda),
         ebitdaMargin: roundRatio(projectedPeriod.margin),
         pretaxUfcfConversion: roundRatio(pretaxUfcfConversion),
@@ -590,6 +671,7 @@
 
       previousRevenue = projectedPeriod.revenue;
       previousMargin = projectedPeriod.margin || previousMargin;
+      previousGrossMargin = projectedPeriod.grossMargin || previousGrossMargin;
       previousCash = cashEop;
     }
 
@@ -598,7 +680,14 @@
 
   function buildExit(profile, assumptions, entry, finalYear, warnings) {
     const exitFiscalYear = finalYear.fiscalYear + 1;
-    const exitForwardPeriod = resolveProjectedPeriod(profile, exitFiscalYear, finalYear.revenue, finalYear.ebitdaMargin, warnings);
+    const exitForwardPeriod = resolveProjectedPeriod(
+      profile,
+      exitFiscalYear,
+      finalYear.revenue,
+      finalYear.ebitdaMargin,
+      finalYear.grossMargin,
+      warnings
+    );
     if (!exitForwardPeriod || !isFiniteNumber(exitForwardPeriod.ebitda)) {
       throw new Error('Unable to determine exit forward EBITDA.');
     }
@@ -616,6 +705,8 @@
       exitForwardPeriodLabel: exitForwardPeriod.periodLabel,
       exitForwardFiscalYear: exitForwardPeriod.fiscalYear,
       exitForwardRevenue: roundCurrency(exitForwardPeriod.revenue),
+      exitForwardGrossProfit: roundCurrency(exitForwardPeriod.grossProfit),
+      exitForwardGrossMargin: roundRatio(exitForwardPeriod.grossMargin),
       exitForwardMargin: roundRatio(exitForwardPeriod.margin),
       debtAtExit: roundCurrency(finalYear.debtEop),
       cashAtExit: roundCurrency(finalYear.cashEop),

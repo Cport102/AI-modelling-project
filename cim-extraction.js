@@ -414,10 +414,78 @@ async function deleteGeminiFile({ apiKey, fileName }) {
 
 function getResponseText(payload) {
   const parts = payload?.candidates?.[0]?.content?.parts || [];
-  return parts
-    .map(part => part?.text || '')
-    .join('')
-    .trim();
+  const textParts = [];
+
+  for (const part of parts) {
+    if (!part || typeof part !== 'object') continue;
+
+    if (typeof part.text === 'string' && part.text.trim()) {
+      textParts.push(part.text.trim());
+      continue;
+    }
+
+    if (part.functionCall?.args && typeof part.functionCall.args === 'object') {
+      textParts.push(JSON.stringify(part.functionCall.args));
+      continue;
+    }
+
+    if (part.inlineData?.mimeType === 'application/json' && typeof part.inlineData.data === 'string') {
+      try {
+        textParts.push(Buffer.from(part.inlineData.data, 'base64').toString('utf8'));
+        continue;
+      } catch {
+        // Ignore undecodable inline JSON data and continue scanning.
+      }
+    }
+
+    for (const value of Object.values(part)) {
+      if (typeof value === 'string' && /[{[]/.test(value)) {
+        textParts.push(value.trim());
+        break;
+      }
+
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        const keys = Object.keys(value);
+        if (keys.some((key) => EXTRACTION_SCHEMA.required.includes(key))) {
+          textParts.push(JSON.stringify(value));
+          break;
+        }
+      }
+    }
+  }
+
+  return textParts.join('\n').trim();
+}
+
+function findStructuredResultInValue(value, seen = new Set()) {
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+
+  if (seen.has(value)) {
+    return null;
+  }
+  seen.add(value);
+
+  if (!Array.isArray(value)) {
+    const keys = Object.keys(value);
+    const schemaKeyCount = EXTRACTION_SCHEMA.required.filter((key) => keys.includes(key)).length;
+    const hasPeriodArrays = Array.isArray(value.historical_years) || Array.isArray(value.forecast_years);
+
+    if (schemaKeyCount >= 3 || hasPeriodArrays) {
+      return coerceStructuredResultShape(value);
+    }
+  }
+
+  const children = Array.isArray(value) ? value : Object.values(value);
+  for (const child of children) {
+    const match = findStructuredResultInValue(child, seen);
+    if (match) {
+      return match;
+    }
+  }
+
+  return null;
 }
 
 function stripMarkdownCodeFences(value) {
@@ -468,6 +536,42 @@ function closeOpenJsonStructures(value) {
   }
 
   return text + stack.reverse().join('');
+}
+
+function repairTruncatedJsonCandidate(value) {
+  let text = String(value || '').trimEnd();
+  let inString = false;
+  let escaped = false;
+
+  for (let i = 0; i < text.length; i += 1) {
+    const char = text[i];
+
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (char === '\\') {
+        escaped = true;
+      } else if (char === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      inString = true;
+    }
+  }
+
+  if (escaped) {
+    text = text.slice(0, -1);
+  }
+
+  if (inString) {
+    text += '"';
+  }
+
+  text = text.replace(/[,:]\s*$/, '');
+  return closeOpenJsonStructures(text);
 }
 
 function coerceStructuredResultShape(result) {
@@ -559,8 +663,9 @@ function extractFirstJsonObject(value) {
     }
   }
 
-  console.error('Gemini extraction parse failure: JSON object appears truncated:', text.slice(start, Math.min(text.length, start + 2000)));
-  throw new Error('Gemini returned invalid JSON.');
+  const truncatedCandidate = text.slice(start);
+  console.warn('Gemini extraction parse warning: JSON object appears truncated, attempting repair:', truncatedCandidate.slice(0, 2000));
+  return repairTruncatedJsonCandidate(truncatedCandidate);
 }
 
 function parseGeminiJsonResponse(responseText) {
@@ -574,7 +679,7 @@ function parseGeminiJsonResponse(responseText) {
     try {
       return coerceStructuredResultShape(JSON.parse(sanitizedCandidate));
     } catch {
-      const repairedCandidate = closeOpenJsonStructures(sanitizedCandidate);
+      const repairedCandidate = repairTruncatedJsonCandidate(sanitizedCandidate);
 
       try {
         return coerceStructuredResultShape(JSON.parse(repairedCandidate));
@@ -753,13 +858,15 @@ async function extractCimDataFromPdf(file) {
     const generationResponse = await requestExtractionWithRetries({ apiKey, uploadedFile });
 
     const responseJson = await generationResponse.json();
+    const structuredFromPayload = findStructuredResultInValue(responseJson);
     const responseText = getResponseText(responseJson);
-    if (!responseText) {
-      console.error('Gemini extraction returned an empty text payload:', JSON.stringify(responseJson).slice(0, 2000));
+
+    if (!structuredFromPayload && !responseText) {
+      console.error('Gemini extraction returned no parseable content:', JSON.stringify(responseJson).slice(0, 2000));
       throw new Error('Gemini returned an empty extraction result.');
     }
 
-    const structured = parseGeminiJsonResponse(responseText);
+    const structured = structuredFromPayload || parseGeminiJsonResponse(responseText);
 
     validateStructuredResult(structured);
     const rows = normalizeRows(structured);

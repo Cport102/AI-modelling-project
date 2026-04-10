@@ -70,7 +70,7 @@
     #app {
       display: flex;
       flex-direction: column;
-      max-width: 860px;
+      max-width: 1560px;
       margin: 0 auto;
       padding: 24px 18px 32px;
     }
@@ -421,112 +421,225 @@
     }
 
     /* ─── Chat Thread ────────────────────────────────────────────────────── */
-    .returns-grid {
-      display: grid;
-      gap: 12px;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    .financial-profile {
+      display: none;
+      margin-top: 14px;
+      gap: 14px;
     }
 
-    .returns-field {
+    .financial-profile.visible {
       display: grid;
-      gap: 6px;
     }
 
-    .returns-field label {
-      font-size: 12px;
+    .assumptions-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: end;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: #fcfbf8;
+    }
+
+    .assumptions-bar .returns-field {
+      display: grid;
+      gap: 5px;
+      min-width: 118px;
+      flex: 1 1 118px;
+    }
+
+    .assumptions-bar .returns-field label {
+      font-size: 11px;
       color: var(--text-muted);
       font-weight: 600;
+      letter-spacing: .02em;
     }
 
-    .returns-field input,
-    .returns-field select {
+    .assumptions-bar .returns-field input,
+    .assumptions-bar .returns-field select {
       width: 100%;
       border: 1px solid var(--border);
       border-radius: 10px;
-      background: var(--surface);
+      background: #fff;
       color: var(--text);
-      padding: 10px 12px;
-      font-size: 13px;
+      padding: 8px 10px;
+      font-size: 12.5px;
+      min-height: 38px;
     }
 
-    #returns-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 14px;
-    }
-
-    #returns-results {
-      display: none;
-      margin-top: 16px;
-      border-top: 1px solid var(--border);
-      padding-top: 16px;
-    }
-
-    #returns-results.visible {
-      display: block;
-    }
-
-    .returns-summary-grid {
+    .mini-charts {
       display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 12px;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      margin-bottom: 14px;
     }
 
-    .returns-metric {
-      background: var(--surface-hover);
+    .mini-chart-card {
       border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 12px 14px;
+      border-radius: 16px;
+      padding: 10px 12px 12px;
+      background: #fcfbf8;
     }
 
-    .returns-metric span {
-      display: block;
-      font-size: 11.5px;
+    .mini-chart-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .mini-chart-header strong {
+      font-size: 12px;
+      letter-spacing: .02em;
+    }
+
+    .mini-chart-header span {
+      font-size: 11px;
       color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: .06em;
-      margin-bottom: 5px;
     }
 
-    .returns-metric strong {
-      font-size: 16px;
+    .mini-chart-card svg {
+      width: 100%;
+      height: 120px;
+      display: block;
     }
 
-    #returns-projection-wrap {
-      margin-top: 14px;
-    }
-
-    #returns-projection-wrap {
+    .model-table-wrap {
       overflow-x: auto;
       border: 1px solid var(--border);
-      border-radius: 14px;
+      border-radius: 18px;
+      background: #fff;
     }
 
-    #returns-projection-table {
+    .model-table {
       width: 100%;
       border-collapse: collapse;
       font-size: 12.5px;
-      background: var(--surface);
+      background: #fff;
+      table-layout: fixed;
     }
 
-    #returns-projection-table th,
-    #returns-projection-table td {
-      text-align: left;
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--border);
-      white-space: nowrap;
+    .model-table th,
+    .model-table td {
+      padding: 9px 10px;
+      border-bottom: 1px solid #eceae4;
+      vertical-align: middle;
+      white-space: normal;
+      overflow-wrap: anywhere;
     }
 
-    #returns-projection-table th {
+    .model-table thead th {
       font-size: 11.5px;
       color: var(--text-muted);
-      background: var(--surface-hover);
+      background: #f8f6f1;
+      text-align: center;
+      font-weight: 600;
     }
 
-    #returns-projection-table tbody tr:last-child td {
-      border-bottom: none;
+    .model-table .left-col {
+      text-align: left;
+      position: sticky;
+      z-index: 2;
+    }
+
+    .model-table .left-col {
+      left: 0;
+      min-width: 180px;
+      background: inherit;
+    }
+
+    .model-table .value-cell,
+    .model-table .cagr-col {
+      text-align: right;
+    }
+
+    .model-table .forecast-col {
+      background: #f6f8f8;
+    }
+
+    .model-table .exit-col {
+      background: #e8f2f1;
+    }
+
+    .model-table .cagr-col {
+      background: #f4f3ef;
+      min-width: 110px;
+    }
+
+    .model-table .placeholder-cell {
+      color: #a8a39a;
+      background: #f5f3ee;
+    }
+
+    .section-header {
+      cursor: pointer;
+      user-select: none;
+      background: #faf8f4;
+      font-weight: 700;
+    }
+
+    .section-header th {
+      border-bottom: 1px solid #dfdbd1;
+      color: var(--text);
+      font-size: 12.5px;
+      letter-spacing: .01em;
+    }
+
+    .section-header button {
+      all: unset;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .sub-row td,
+    .sub-row th {
+      color: var(--text-muted);
+      font-size: 11.5px;
+      background: #fcfbf9;
+    }
+
+    .line-item-label {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .returns-strip {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(120px, 1fr));
+      gap: 10px;
+    }
+
+    .returns-strip .returns-metric {
+      background: #faf8f4;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 10px 12px;
+    }
+
+    .returns-strip .returns-metric span {
+      display: block;
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 4px;
+    }
+
+    .returns-strip .returns-metric strong {
+      font-size: 15px;
+    }
+
+    .header-chip {
+      display: block;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: #59706d;
+      margin-bottom: 4px;
     }
 
     #messages {
@@ -905,6 +1018,8 @@
       #input-area { padding: 10px 14px 16px; }
       #header { padding: 10px 14px; }
       #messages { height: 160px; min-height: 96px; }
+      .mini-charts { grid-template-columns: 1fr; }
+      .returns-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
   </style>
 </head>
@@ -1051,16 +1166,6 @@
         <div id="cim-meta"></div>
 
         <div id="cim-results">
-          <div id="returns-results">
-            <div id="returns-projection-wrap">
-              <table id="returns-projection-table">
-                <tbody id="returns-projection-body"></tbody>
-              </table>
-            </div>
-
-            <div class="returns-summary-grid" id="returns-summary-grid"></div>
-          </div>
-
           <div class="cim-results-grid">
             <div class="cim-result-block">
               <h3>Warnings</h3>
@@ -1068,12 +1173,13 @@
             </div>
           </div>
 
-          <div class="returns-grid">
-          <div class="returns-field">
+          <div id="financial-profile" class="financial-profile">
+            <div class="assumptions-bar">
+              <div class="returns-field">
             <label for="assumption-entry-date">Entry Date</label>
             <input id="assumption-entry-date" type="date" />
-          </div>
-          <div class="returns-field">
+              </div>
+              <div class="returns-field">
             <label for="assumption-fiscal-year-end-month">Fiscal Year-End Month</label>
             <select id="assumption-fiscal-year-end-month">
               <option value="1">January</option>
@@ -1089,37 +1195,51 @@
               <option value="11">November</option>
               <option value="12">December</option>
             </select>
-          </div>
-          <div class="returns-field">
+              </div>
+              <div class="returns-field">
             <label for="assumption-entry-multiple">Entry Multiple</label>
             <input id="assumption-entry-multiple" type="number" step="0.1" />
-          </div>
-          <div class="returns-field">
+              </div>
+              <div class="returns-field">
             <label for="assumption-exit-multiple">Exit Multiple</label>
             <input id="assumption-exit-multiple" type="number" step="0.1" />
-          </div>
-          <div class="returns-field">
+              </div>
+              <div class="returns-field">
             <label for="assumption-leverage">Leverage</label>
             <input id="assumption-leverage" type="number" step="0.1" />
-          </div>
-          <div class="returns-field">
+              </div>
+              <div class="returns-field">
             <label for="assumption-minimum-cash">Minimum Cash</label>
             <input id="assumption-minimum-cash" type="number" step="0.01" placeholder="Optional override" />
-          </div>
-          <div class="returns-field">
+              </div>
+              <div class="returns-field">
             <label for="assumption-hold-years">Hold Years</label>
             <input id="assumption-hold-years" type="number" step="1" min="1" />
-          </div>
-          <div class="returns-field">
+              </div>
+              <div class="returns-field">
             <label for="assumption-pretax-ufcf-conversion">Pre-tax uFCF Conversion %</label>
             <input id="assumption-pretax-ufcf-conversion" type="number" step="0.01" />
+              </div>
+              <div class="returns-field">
+            <label for="assumption-mep">Management Equity Plan %</label>
+            <input id="assumption-mep" type="number" step="0.01" />
+              </div>
+
+              <button class="secondary-btn" id="returns-run-btn" type="button">Run returns model</button>
+            </div>
+
+            <div id="mini-charts" class="mini-charts"></div>
+
+            <div class="model-table-wrap">
+              <table id="model-table" class="model-table">
+                <thead id="model-table-head"></thead>
+                <tbody id="model-table-body"></tbody>
+              </table>
+            </div>
+
+            <div id="returns-strip" class="returns-strip"></div>
           </div>
         </div>
-
-        <div id="returns-actions">
-          <button class="secondary-btn" id="returns-run-btn" type="button">Run returns model</button>
-        </div>
-
       </div>
     </section>
   </section>
@@ -1176,10 +1296,12 @@ const cimError = $('cim-error');
 const cimMeta = $('cim-meta');
 const cimResults = $('cim-results');
 const cimWarnings = $('cim-warnings');
+const financialProfile = $('financial-profile');
 const returnsRunBtn = $('returns-run-btn');
-const returnsResults = $('returns-results');
-const returnsSummaryGrid = $('returns-summary-grid');
-const returnsProjectionBody = $('returns-projection-body');
+const miniCharts = $('mini-charts');
+const modelTableHead = $('model-table-head');
+const modelTableBody = $('model-table-body');
+const returnsStrip = $('returns-strip');
 const assumptionEntryDate = $('assumption-entry-date');
 const assumptionFiscalYearEndMonth = $('assumption-fiscal-year-end-month');
 const assumptionEntryMultiple = $('assumption-entry-multiple');
@@ -1188,6 +1310,7 @@ const assumptionLeverage = $('assumption-leverage');
 const assumptionMinimumCash = $('assumption-minimum-cash');
 const assumptionHoldYears = $('assumption-hold-years');
 const assumptionPretaxUfcfConversion = $('assumption-pretax-ufcf-conversion');
+const assumptionMep = $('assumption-mep');
 const messagesEl  = $('messages');
 const welcomeEl   = $('welcome');
 const typingEl    = $('typing-indicator');
@@ -1205,6 +1328,11 @@ const iconMoon    = $('icon-moon');
 let cimExtractionResult = null;
 let cimStatusTimeout = null;
 let returnsModelResult = null;
+const financialProfileSections = {
+  revenue: true,
+  ebitda: true,
+  capex: true,
+};
 
 function setActiveView(view) {
   const showChat = view !== 'modelling';
@@ -1367,9 +1495,40 @@ function setCimError(message) {
 
 function resetReturnsResults() {
   returnsModelResult = null;
-  returnsResults.classList.remove('visible');
-  returnsSummaryGrid.innerHTML = '';
-  returnsProjectionBody.innerHTML = '';
+  financialProfile.classList.remove('visible');
+  miniCharts.innerHTML = '';
+  modelTableHead.innerHTML = '';
+  modelTableBody.innerHTML = '';
+  returnsStrip.innerHTML = '';
+}
+
+function captureFinancialProfileSnapshot() {
+  return {
+    visible: financialProfile.classList.contains('visible'),
+    miniChartsHtml: miniCharts.innerHTML,
+    modelTableHeadHtml: modelTableHead.innerHTML,
+    modelTableBodyHtml: modelTableBody.innerHTML,
+    returnsStripHtml: returnsStrip.innerHTML,
+  };
+}
+
+function restoreFinancialProfileSnapshot(snapshot) {
+  if (!snapshot) return;
+  miniCharts.innerHTML = snapshot.miniChartsHtml || '';
+  modelTableHead.innerHTML = snapshot.modelTableHeadHtml || '';
+  modelTableBody.innerHTML = snapshot.modelTableBodyHtml || '';
+  returnsStrip.innerHTML = snapshot.returnsStripHtml || '';
+  financialProfile.classList.toggle('visible', Boolean(snapshot.visible));
+}
+
+function setReturnsModelStatus(message) {
+  setCimStatus(message || '');
+  clearTimeout(cimStatusTimeout);
+  cimStatusTimeout = setTimeout(() => {
+    if (cimExtractionResult) {
+      setCimStatus('Extraction complete.');
+    }
+  }, 1500);
 }
 
 function resetCimResults() {
@@ -1396,8 +1555,10 @@ function populateReturnsDefaults(result) {
   setInputValueIfEmpty(assumptionEntryMultiple, 20.0);
   setInputValueIfEmpty(assumptionExitMultiple, 20.0);
   setInputValueIfEmpty(assumptionLeverage, 4.5);
+  setInputValueIfEmpty(assumptionMinimumCash, 10.0);
   setInputValueIfEmpty(assumptionHoldYears, Math.max(3, forecastYears.length || 0, 5));
   setInputValueIfEmpty(assumptionPretaxUfcfConversion, 90.0);
+  setInputValueIfEmpty(assumptionMep, 10.0);
 }
 
 function renderStringList(listEl, values, emptyText) {
@@ -1430,17 +1591,91 @@ function getReturnsDisplayContext(result) {
   };
 }
 
-function getReturnsUnitSuffix(units) {
+function getSourceUnitLabel(units) {
   switch (units) {
     case 'thousands':
       return 'k';
     case 'millions':
-      return 'm';
+      return 'mm';
     case 'billions':
       return 'bn';
     default:
       return '';
   }
+}
+
+function scaleReturnValue(value, result) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return null;
+  const context = getReturnsDisplayContext(result);
+  return Number(value) / context.multiplier;
+}
+
+function formatDash() {
+  return 'â€”';
+}
+
+function formatModelMoney(value, currency) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return formatDash();
+  const numeric = Number(value);
+  const prefix = currency === 'USD' ? '$ ' : currency ? `${currency} ` : '$ ';
+  const absolute = Math.abs(numeric).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  return numeric < 0 ? `(${prefix}${absolute})` : `${prefix}${absolute}`;
+}
+
+function formatModelPercent(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return formatDash();
+  const numeric = Number(value) * 100;
+  const absolute = Math.abs(numeric).toFixed(1);
+  return numeric < 0 ? `(${absolute}%)` : `${absolute}%`;
+}
+
+function formatModelMultiple(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return formatDash();
+  return `${Number(value).toFixed(2)}x`;
+}
+
+function calculateCagr(startValue, endValue, periods) {
+  if (!Number.isFinite(startValue) || !Number.isFinite(endValue) || startValue <= 0 || endValue <= 0 || periods <= 0) {
+    return null;
+  }
+  return Math.pow(endValue / startValue, 1 / periods) - 1;
+}
+
+function renderModelCell(value, className = '') {
+  const text = value === null || value === undefined || value === '' ? formatDash() : String(value);
+  const classes = [className, text === formatDash() ? 'placeholder-cell' : ''].filter(Boolean).join(' ');
+  return `<td class="${classes}">${text === formatDash() ? '&nbsp;' : escapeHtml(text)}</td>`;
+}
+
+function renderModelHeaderCell(value, className = '') {
+  const text = value === null || value === undefined || value === '' ? formatDash() : String(value);
+  const classes = [className, text === formatDash() ? 'placeholder-cell' : ''].filter(Boolean).join(' ');
+  return `<th class="${classes}">${text === formatDash() ? '&nbsp;' : escapeHtml(text)}</th>`;
+}
+
+function getChartCurrencyPrefix(currency) {
+  if (currency === 'USD' || currency === '$' || !currency) return '$';
+  return `${currency} `;
+}
+
+function formatChartMoney(value, currency) {
+  if (!Number.isFinite(Number(value))) return formatDash();
+  const numeric = Number(value);
+  const prefix = getChartCurrencyPrefix(currency);
+  const absolute = Math.abs(numeric).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  return numeric < 0 ? `(${prefix}${absolute})` : `${prefix}${absolute}`;
+}
+
+function getChartAxisLabel(label) {
+  const text = String(label || '').trim();
+  const yearMatch = text.match(/(\d{2,4})/);
+  if (yearMatch) {
+    const rawYear = yearMatch[1];
+    return rawYear.length === 4 ? rawYear : `20${rawYear}`;
+  }
+
+  const suffixMatch = text.match(/([A-Z])$/i);
+  return suffixMatch ? text.replace(suffixMatch[1], '').trim() : text;
 }
 
 function formatReturnsMoney(value, result) {
@@ -1490,6 +1725,7 @@ function collectReturnsAssumptions() {
     minimumCashInSourceUnits: readOptionalNumber(assumptionMinimumCash),
     holdYears: readOptionalNumber(assumptionHoldYears),
     pretaxUfcfConversion: readOptionalNumber(assumptionPretaxUfcfConversion),
+    mipPct: readOptionalNumber(assumptionMep),
   };
 }
 
@@ -1584,6 +1820,654 @@ function runReturnsModel() {
     returnsResults.classList.add('visible');
   } catch (error) {
     returnsResults.classList.remove('visible');
+  }
+}
+
+function getFinancialPeriods(cimResult, returnsResult) {
+  const cimRows = Array.isArray(cimResult?.rows) ? cimResult.rows : [];
+  const projectionRows = Array.isArray(returnsResult?.operatingProjection) ? returnsResult.operatingProjection.slice() : [];
+  const periodMap = new Map();
+
+  for (const row of cimRows) {
+    periodMap.set(row.period_label, {
+      label: row.period_label,
+      bucket: row.type === 'Historical' ? 'historical' : 'forecast',
+      cim: row,
+      projection: projectionRows.find(item => item.periodLabel === row.period_label) || null,
+    });
+  }
+
+  for (const row of projectionRows) {
+    if (!periodMap.has(row.periodLabel)) {
+      periodMap.set(row.periodLabel, {
+        label: row.periodLabel,
+        bucket: 'forecast',
+        cim: null,
+        projection: row,
+      });
+    }
+  }
+
+  const periods = [...periodMap.values()];
+  const exitLabel = returnsResult?.exit?.exitForwardPeriodLabel || '';
+  const exitIndex = periods.findIndex(period => period.label === exitLabel);
+
+  if (exitLabel && exitIndex >= 0) {
+    periods[exitIndex].bucket = 'exit';
+  } else if (exitLabel) {
+    periods.push({
+      label: exitLabel,
+      bucket: 'exit',
+      cim: null,
+      projection: projectionRows.find(item => item.periodLabel === exitLabel) || null,
+    });
+  }
+
+  return periods;
+}
+
+function getPeriodValue(period, key, returnsResult) {
+  if (period.cim && key in period.cim && period.cim[key] !== undefined && period.cim[key] !== null) {
+    return Number(period.cim[key]);
+  }
+
+  if (period.projection && key in period.projection && period.projection[key] !== undefined && period.projection[key] !== null) {
+    return scaleReturnValue(period.projection[key], returnsResult);
+  }
+
+  if (period.bucket === 'exit') {
+    if (key === 'revenue' && returnsResult?.exit?.exitForwardRevenue !== undefined) {
+      return scaleReturnValue(returnsResult.exit.exitForwardRevenue, returnsResult);
+    }
+    if (key === 'ebitda' && returnsResult?.exit?.finalYearEbitda !== undefined) {
+      return scaleReturnValue(returnsResult.exit.finalYearEbitda, returnsResult);
+    }
+  }
+
+  return null;
+}
+
+function getLastProvidedGrowth(periods, baseValues) {
+  let lastGrowth = null;
+
+  for (let index = 1; index < periods.length; index += 1) {
+    const current = baseValues[periods[index].label];
+    const prior = baseValues[periods[index - 1].label];
+    if (Number.isFinite(current) && Number.isFinite(prior) && prior !== 0) {
+      lastGrowth = (current / prior) - 1;
+    }
+  }
+
+  return lastGrowth;
+}
+
+function extendRevenueSeries(periods, returnsResult) {
+  const revenueValues = {};
+  let hasProvidedRevenue = false;
+
+  for (const period of periods) {
+    if (period.cim?.revenue !== undefined && period.cim?.revenue !== null) {
+      revenueValues[period.label] = Number(period.cim.revenue);
+      hasProvidedRevenue = true;
+    } else {
+      revenueValues[period.label] = null;
+    }
+  }
+
+  if (!hasProvidedRevenue) {
+    for (const period of periods) {
+      if (period.projection?.revenue !== undefined && period.projection?.revenue !== null) {
+        revenueValues[period.label] = scaleReturnValue(period.projection.revenue, returnsResult);
+      } else if (period.bucket === 'exit' && returnsResult?.exit?.exitForwardRevenue !== undefined) {
+        revenueValues[period.label] = scaleReturnValue(returnsResult.exit.exitForwardRevenue, returnsResult);
+      }
+    }
+    return revenueValues;
+  }
+
+  const lastProvidedGrowth = getLastProvidedGrowth(periods, revenueValues);
+
+  for (let index = 0; index < periods.length; index += 1) {
+    const label = periods[index].label;
+    if (Number.isFinite(revenueValues[label])) continue;
+
+    const priorLabel = index > 0 ? periods[index - 1].label : null;
+    const priorRevenue = priorLabel ? revenueValues[priorLabel] : null;
+    if (Number.isFinite(priorRevenue) && Number.isFinite(lastProvidedGrowth)) {
+      revenueValues[label] = priorRevenue * (1 + lastProvidedGrowth);
+    }
+  }
+
+  return revenueValues;
+}
+
+function extendGrossProfitSeries(periods, returnsResult, revenueValues) {
+  const grossProfitValues = {};
+
+  for (const period of periods) {
+    if (period.cim?.gross_profit !== undefined && period.cim?.gross_profit !== null) {
+      grossProfitValues[period.label] = Number(period.cim.gross_profit);
+    } else {
+      grossProfitValues[period.label] = null;
+    }
+  }
+
+  let lastGrossMargin = null;
+  for (const period of periods) {
+    const revenue = revenueValues[period.label];
+    const grossProfit = grossProfitValues[period.label];
+    if (Number.isFinite(revenue) && revenue !== 0 && Number.isFinite(grossProfit)) {
+      lastGrossMargin = grossProfit / revenue;
+    }
+  }
+
+  for (const period of periods) {
+    if (Number.isFinite(grossProfitValues[period.label])) continue;
+    const revenue = revenueValues[period.label];
+    if (Number.isFinite(revenue) && Number.isFinite(lastGrossMargin)) {
+      grossProfitValues[period.label] = revenue * lastGrossMargin;
+    }
+  }
+
+  return grossProfitValues;
+}
+
+function extendEbitdaSeries(periods, returnsResult, revenueValues) {
+  const ebitdaValues = {};
+  let hasProvidedEbitda = false;
+
+  for (const period of periods) {
+    if (period.cim?.ebitda !== undefined && period.cim?.ebitda !== null) {
+      ebitdaValues[period.label] = Number(period.cim.ebitda);
+      hasProvidedEbitda = true;
+    } else {
+      ebitdaValues[period.label] = null;
+    }
+  }
+
+  if (!hasProvidedEbitda) {
+    for (const period of periods) {
+      if (period.projection?.ebitda !== undefined && period.projection?.ebitda !== null) {
+        ebitdaValues[period.label] = scaleReturnValue(period.projection.ebitda, returnsResult);
+      } else if (period.bucket === 'exit' && returnsResult?.exit?.finalYearEbitda !== undefined) {
+        ebitdaValues[period.label] = scaleReturnValue(returnsResult.exit.finalYearEbitda, returnsResult);
+      }
+    }
+    return ebitdaValues;
+  }
+
+  let lastEbitdaMargin = null;
+  for (const period of periods) {
+    const revenue = revenueValues[period.label];
+    const ebitda = ebitdaValues[period.label];
+    if (Number.isFinite(revenue) && revenue !== 0 && Number.isFinite(ebitda)) {
+      lastEbitdaMargin = ebitda / revenue;
+    }
+  }
+
+  for (const period of periods) {
+    if (Number.isFinite(ebitdaValues[period.label])) continue;
+    const revenue = revenueValues[period.label];
+    if (Number.isFinite(revenue) && Number.isFinite(lastEbitdaMargin)) {
+      ebitdaValues[period.label] = revenue * lastEbitdaMargin;
+    }
+  }
+
+  return ebitdaValues;
+}
+
+function renderMiniChartCard(title, subtitle, bars, currency, labels) {
+  const width = 320;
+  const height = 120;
+  const padding = 14;
+  const topPadding = 28;
+  const bottomPadding = 24;
+  const drawableWidth = width - (padding * 2);
+  const drawableHeight = height - topPadding - bottomPadding;
+  const maxBar = Math.max(...bars.map(value => Math.abs(value || 0)), 1);
+  const step = drawableWidth / Math.max(bars.length, 1);
+
+  const barWidth = Math.max(step - 12, 8);
+  const chartBottom = height - bottomPadding;
+
+  const rects = bars.map((value, index) => {
+    const barHeight = (Math.abs(value || 0) / maxBar) * (drawableHeight - 10);
+    const x = padding + (index * step) + 6;
+    const y = chartBottom - barHeight;
+    return `<rect x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" rx="4" fill="#ddd8ce"></rect>`;
+  }).join('');
+
+  const valueLabels = bars.map((value, index) => {
+    if (!Number.isFinite(Number(value))) return '';
+    const barHeight = (Math.abs(value || 0) / maxBar) * (drawableHeight - 10);
+    const x = padding + (index * step) + 6 + (barWidth / 2);
+    const y = Math.max(topPadding - 4, chartBottom - barHeight - 4);
+    return `<text x="${x}" y="${y}" text-anchor="middle" font-size="9.5" fill="#6f695f">${escapeHtml(formatChartMoney(value, currency))}</text>`;
+  }).join('');
+
+  const axisLabels = labels.map((label, index) => {
+    const x = padding + (index * step) + (step / 2);
+    return `<text x="${x}" y="${height - 6}" text-anchor="middle" font-size="9.5" fill="#8a857c">${escapeHtml(getChartAxisLabel(label))}</text>`;
+  }).join('');
+
+  return `
+    <div class="mini-chart-card">
+      <div class="mini-chart-header">
+        <strong>${escapeHtml(title)}</strong>
+        <span>${escapeHtml(subtitle || currency || '')}</span>
+      </div>
+      <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="${escapeHtml(title)} chart">
+        <line x1="${padding}" y1="${chartBottom}" x2="${width - padding}" y2="${chartBottom}" stroke="#ebe6db" stroke-width="1"></line>
+        ${rects}
+        ${valueLabels}
+        ${axisLabels}
+      </svg>
+    </div>
+  `;
+}
+
+function renderMiniCharts(cimResult, returnsResult, periods, seriesOverrides = {}) {
+  const currency = cimResult?.structured?.currency || returnsResult?.normalizedProfile?.currency || '$';
+  const labels = periods.map(period => period.label);
+  const revenueValues = periods.map(period => seriesOverrides.revenueValues?.[period.label] ?? getPeriodValue(period, 'revenue', returnsResult));
+  const grossProfitValues = periods.map(period => seriesOverrides.grossProfitValues?.[period.label] ?? getPeriodValue(period, 'gross_profit', returnsResult));
+  const ebitdaValues = periods.map(period => seriesOverrides.ebitdaValues?.[period.label] ?? getPeriodValue(period, 'ebitda', returnsResult));
+
+  miniCharts.innerHTML = [
+    renderMiniChartCard('Revenue', 'Bars', revenueValues, currency, labels),
+    renderMiniChartCard('Gross Profit', 'Bars', grossProfitValues, currency, labels),
+    renderMiniChartCard('EBITDA', 'Bars', ebitdaValues, currency, labels),
+  ].join('');
+}
+
+function buildFinancialDisplayPeriods(returnsResult) {
+  const periods = new Map();
+  const normalizedProfile = returnsResult?.normalizedProfile || {};
+  const scaleValue = (value) => scaleReturnValue(value, returnsResult);
+
+  const upsertPeriod = (label, bucket, fiscalYear) => {
+    if (!periods.has(label)) {
+      periods.set(label, {
+        label,
+        bucket,
+        fiscalYear: Number.isInteger(fiscalYear) ? fiscalYear : null,
+        revenue: null,
+        grossProfit: null,
+        grossMargin: null,
+        sgna: null,
+        ebitda: null,
+        ebitdaMargin: null,
+        capex: null,
+        pretaxUfcf: null,
+        pretaxUfcfConversion: null,
+        tax: null,
+        interest: null,
+        postTaxCashFlow: null,
+        cashEop: null,
+      });
+    }
+
+    const period = periods.get(label);
+    period.bucket = period.bucket === 'historical' ? period.bucket : bucket;
+    if (Number.isInteger(fiscalYear)) {
+      period.fiscalYear = fiscalYear;
+    }
+    return period;
+  };
+
+  for (const row of normalizedProfile.historicalPeriods || []) {
+    const period = upsertPeriod(row.periodLabel, 'historical', row.fiscalYear);
+    period.revenue = scaleValue(row.revenue);
+    period.grossProfit = scaleValue(row.grossProfit);
+    period.grossMargin = row.grossMargin ?? null;
+    period.ebitda = scaleValue(row.ebitda);
+    period.ebitdaMargin = row.ebitdaMargin ?? null;
+  }
+
+  for (const row of normalizedProfile.forecastPeriods || []) {
+    const period = upsertPeriod(row.periodLabel, 'forecast', row.fiscalYear);
+    period.revenue = scaleValue(row.revenue);
+    period.grossProfit = scaleValue(row.grossProfit);
+    period.grossMargin = row.grossMargin ?? null;
+    period.ebitda = scaleValue(row.ebitda);
+    period.ebitdaMargin = row.ebitdaMargin ?? null;
+  }
+
+  for (const row of returnsResult?.operatingProjection || []) {
+    const period = upsertPeriod(row.periodLabel, 'forecast', row.fiscalYear);
+    period.revenue = scaleValue(row.revenue);
+    period.grossProfit = scaleValue(row.grossProfit);
+    period.grossMargin = row.grossMargin ?? null;
+    period.sgna = scaleValue(row.sgna);
+    period.ebitda = scaleValue(row.ebitda);
+    period.ebitdaMargin = row.ebitdaMargin ?? null;
+    period.capex = scaleValue(row.capex);
+    period.pretaxUfcf = scaleValue(row.pretaxUfcf);
+    period.pretaxUfcfConversion = row.pretaxUfcfConversion ?? null;
+    period.tax = scaleValue(row.tax);
+    period.interest = scaleValue(row.interest);
+    period.postTaxCashFlow = scaleValue(row.postTaxCashFlow);
+    period.cashEop = scaleValue(row.cashEop);
+  }
+
+  if (returnsResult?.exit?.exitForwardPeriodLabel) {
+    const period = upsertPeriod(
+      returnsResult.exit.exitForwardPeriodLabel,
+      'exit',
+      returnsResult.exit.exitForwardFiscalYear
+    );
+    period.revenue = scaleValue(returnsResult.exit.exitForwardRevenue);
+    period.grossProfit = scaleValue(returnsResult.exit.exitForwardGrossProfit);
+    period.grossMargin = returnsResult.exit.exitForwardGrossMargin ?? null;
+    period.sgna = Number.isFinite(period.grossProfit) && Number.isFinite(scaleValue(returnsResult.exit.finalYearEbitda))
+      ? period.grossProfit - scaleValue(returnsResult.exit.finalYearEbitda)
+      : null;
+    period.ebitda = scaleValue(returnsResult.exit.finalYearEbitda);
+    period.ebitdaMargin = returnsResult.exit.exitForwardMargin ?? null;
+  }
+
+  return [...periods.values()];
+}
+
+function buildModelTableHeaders(periods, assumptions, returnsResult) {
+  const historical = periods.filter(period => period.bucket === 'historical');
+  const forecast = periods.filter(period => period.bucket === 'forecast');
+  const exit = periods.filter(period => period.bucket === 'exit');
+  const context = getReturnsDisplayContext(returnsResult);
+  const histLabel = historical.length ? `${historical[0].label}-${historical[historical.length - 1].label}` : 'Hist';
+  const forecastLabel = periods.length > historical.length ? `${historical[historical.length - 1]?.label || ''}-${periods[periods.length - 1].label}` : 'Forecast';
+
+  modelTableHead.innerHTML = `
+    <tr>
+      <th class="left-col" rowspan="2">$ in ${escapeHtml(getSourceUnitLabel(context.units) || context.units || '')}</th>
+      ${historical.length ? `<th colspan="${historical.length}">Historical</th>` : ''}
+      ${forecast.length ? `<th colspan="${forecast.length}">Forecast</th>` : ''}
+      ${exit.length ? `<th colspan="${exit.length}" class="exit-col">Exit</th>` : ''}
+      <th class="cagr-col" rowspan="2">Hist CAGR<br><span>${escapeHtml(histLabel)}</span></th>
+      <th class="cagr-col" rowspan="2">Frcst CAGR / Δ bps<br><span>${escapeHtml(forecastLabel)}</span></th>
+    </tr>
+    <tr>
+      ${periods.map(period => {
+        const classes = [
+          period.bucket === 'forecast' ? 'forecast-col' : '',
+          period.bucket === 'exit' ? 'exit-col' : '',
+        ].filter(Boolean).join(' ');
+        const chip = period.bucket === 'exit'
+          ? `<span class="header-chip">${escapeHtml(String(readOptionalNumber(assumptionHoldYears) || assumptions.holdYears || ''))} YR HOLD</span><span class="header-chip">EXIT NTM</span>`
+          : '';
+        return `<th class="${classes}">${chip}${escapeHtml(period.label)}</th>`;
+      }).join('')}
+    </tr>
+  `;
+}
+
+function getColumnClass(period) {
+  return [
+    'value-cell',
+    period.bucket === 'forecast' ? 'forecast-col' : '',
+    period.bucket === 'exit' ? 'exit-col' : '',
+  ].filter(Boolean).join(' ');
+}
+
+function sectionColspan(periods) {
+  return periods.length + 4;
+}
+
+function createAbsoluteRow(label, driverLabel, driverDetail, periods, values, currency, historicalPeriods, forwardPeriods) {
+  const histValues = historicalPeriods.map(period => values[period.label]).filter(value => Number.isFinite(value));
+  const forwardValues = forwardPeriods.map(period => values[period.label]).filter(value => Number.isFinite(value));
+  const histCagr = histValues.length >= 2 ? calculateCagr(histValues[0], histValues[histValues.length - 1], histValues.length - 1) : null;
+  const forecastCagr = histValues.length && forwardValues.length ? calculateCagr(histValues[histValues.length - 1], forwardValues[forwardValues.length - 1], forwardValues.length) : null;
+
+  return `
+    <tr>
+      <th class="left-col line-item-label">${escapeHtml(label)}</th>
+      <td class="driver-col">${driverLabel ? `<span class="driver-tag">${escapeHtml(driverLabel)}${driverDetail ? ` · ${escapeHtml(driverDetail)}` : ''}</span>` : ''}</td>
+      ${periods.map(period => `<td class="${getColumnClass(period)}">${escapeHtml(formatModelMoney(values[period.label], currency))}</td>`).join('')}
+      <td class="cagr-col">${escapeHtml(formatModelPercent(histCagr))}</td>
+      <td class="cagr-col">${escapeHtml(formatModelPercent(forecastCagr))}</td>
+    </tr>
+  `;
+}
+
+function createRateRow(label, periods, rates, historicalPeriods, forwardPeriods) {
+  const histRates = historicalPeriods.map(period => rates[period.label]).filter(value => Number.isFinite(value));
+  const forwardRates = forwardPeriods.map(period => rates[period.label]).filter(value => Number.isFinite(value));
+  const histBps = histRates.length >= 2 ? calculateBpsChange(histRates[0], histRates[histRates.length - 1]) : null;
+  const forecastBps = histRates.length && forwardRates.length ? calculateBpsChange(histRates[histRates.length - 1], forwardRates[forwardRates.length - 1]) : null;
+
+  return `
+    <tr class="sub-row">
+      <th class="left-col">${escapeHtml(label)}</th>
+      <td class="driver-col"></td>
+      ${periods.map(period => `<td class="${getColumnClass(period)}">${escapeHtml(formatModelPercent(rates[period.label]))}</td>`).join('')}
+      <td class="cagr-col">${escapeHtml(formatBps(histBps))}</td>
+      <td class="cagr-col">${escapeHtml(formatBps(forecastBps))}</td>
+    </tr>
+  `;
+}
+
+function createSectionHeader(sectionKey, label, periods) {
+  const expanded = financialProfileSections[sectionKey];
+  return `
+    <tr class="section-header">
+      <th class="left-col" colspan="${sectionColspan(periods)}">
+        <button type="button" data-section-toggle="${escapeHtml(sectionKey)}">${expanded ? '▾' : '▸'} ${escapeHtml(label)}</button>
+      </th>
+    </tr>
+  `;
+}
+
+function buildModelTableHeaders(periods, assumptions, returnsResult) {
+  const historical = periods.filter(period => period.bucket === 'historical');
+  const forecast = periods.filter(period => period.bucket === 'forecast');
+  const exit = periods.filter(period => period.bucket === 'exit');
+  const context = getReturnsDisplayContext(returnsResult);
+  const histLabel = historical.length ? `${historical[0].label}-${historical[historical.length - 1].label}` : 'Hist';
+  const forecastLabel = periods.length > historical.length ? `${historical[historical.length - 1]?.label || ''}-${periods[periods.length - 1].label}` : 'Forecast';
+
+  modelTableHead.innerHTML = `
+    <tr>
+      <th class="left-col" rowspan="2">$ in ${escapeHtml(getSourceUnitLabel(context.units) || context.units || '')}</th>
+      ${historical.length ? `<th colspan="${historical.length}">Historical</th>` : ''}
+      ${forecast.length ? `<th colspan="${forecast.length}">Forecast</th>` : ''}
+      ${exit.length ? `<th colspan="${exit.length}" class="exit-col">Exit</th>` : ''}
+      <th class="cagr-col" rowspan="2">Hist CAGR<br><span>${escapeHtml(histLabel)}</span></th>
+      <th class="cagr-col" rowspan="2">Frcst CAGR<br><span>${escapeHtml(forecastLabel)}</span></th>
+    </tr>
+    <tr>
+      ${periods.map(period => {
+        const classes = [
+          period.bucket === 'forecast' ? 'forecast-col' : '',
+          period.bucket === 'exit' ? 'exit-col' : '',
+        ].filter(Boolean).join(' ');
+        const chip = period.bucket === 'exit'
+          ? `<span class="header-chip">${escapeHtml(String(readOptionalNumber(assumptionHoldYears) || assumptions.holdYears || ''))} YR HOLD</span><span class="header-chip">EXIT NTM</span>`
+          : '';
+        return `<th class="${classes}">${chip}${escapeHtml(period.label)}</th>`;
+      }).join('')}
+    </tr>
+  `;
+}
+
+function sectionColspan(periods) {
+  return periods.length + 3;
+}
+
+function createAbsoluteRow(label, periods, values, currency, historicalPeriods, forwardPeriods) {
+  const histValues = historicalPeriods.map(period => values[period.label]).filter(value => Number.isFinite(value));
+  const forwardValues = forwardPeriods.map(period => values[period.label]).filter(value => Number.isFinite(value));
+  const histCagr = histValues.length >= 2 ? calculateCagr(histValues[0], histValues[histValues.length - 1], histValues.length - 1) : null;
+  const forecastCagr = histValues.length && forwardValues.length ? calculateCagr(histValues[histValues.length - 1], forwardValues[forwardValues.length - 1], forwardValues.length) : null;
+
+  return `
+    <tr>
+      <th class="left-col line-item-label">${escapeHtml(label)}</th>
+      ${periods.map(period => renderModelCell(formatModelMoney(values[period.label], currency), getColumnClass(period))).join('')}
+      ${renderModelCell(formatModelPercent(histCagr), 'cagr-col')}
+      ${renderModelCell(formatModelPercent(forecastCagr), 'cagr-col')}
+    </tr>
+  `;
+}
+
+function createRateRow(label, periods, rates) {
+  return `
+    <tr class="sub-row">
+      <th class="left-col">${escapeHtml(label)}</th>
+      ${periods.map(period => renderModelCell(formatModelPercent(rates[period.label]), getColumnClass(period))).join('')}
+      ${renderModelCell(formatDash(), 'cagr-col')}
+      ${renderModelCell(formatDash(), 'cagr-col')}
+    </tr>
+  `;
+}
+
+function renderFinancialProfile(cimResult, returnsResult) {
+  const periods = buildFinancialDisplayPeriods(returnsResult);
+  const historicalPeriods = periods.filter(period => period.bucket === 'historical');
+  const forwardPeriods = periods.filter(period => period.bucket !== 'historical');
+  const currency = cimResult?.structured?.currency || returnsResult?.normalizedProfile?.currency || '$';
+  const assumptions = collectReturnsAssumptions();
+  const revenueValues = Object.fromEntries(periods.map(period => [period.label, period.revenue]));
+  const grossProfitValues = Object.fromEntries(periods.map(period => [period.label, period.grossProfit]));
+  const ebitdaValues = Object.fromEntries(periods.map(period => [period.label, period.ebitda]));
+
+  buildModelTableHeaders(periods, assumptions, returnsResult);
+  renderMiniCharts(cimResult, returnsResult, periods, { revenueValues, grossProfitValues, ebitdaValues });
+  const sgnaValues = Object.fromEntries(periods.map(period => [
+    period.label,
+    Number.isFinite(period.sgna)
+      ? period.sgna
+      : Number.isFinite(grossProfitValues[period.label]) && Number.isFinite(ebitdaValues[period.label])
+        ? grossProfitValues[period.label] - ebitdaValues[period.label]
+        : null,
+  ]));
+  const capexValues = Object.fromEntries(periods.map(period => [period.label, period.capex]));
+  const pretaxValues = Object.fromEntries(periods.map(period => [period.label, period.pretaxUfcf]));
+  const taxValues = Object.fromEntries(periods.map(period => [period.label, period.tax]));
+  const interestValues = Object.fromEntries(periods.map(period => [period.label, period.interest]));
+  const postTaxValues = Object.fromEntries(periods.map(period => [period.label, period.postTaxCashFlow]));
+  const cashValues = Object.fromEntries(periods.map(period => [period.label, period.cashEop]));
+
+  const revenueGrowthRates = Object.fromEntries(periods.map((period, index) => {
+    const current = revenueValues[period.label];
+    const prior = index > 0 ? revenueValues[periods[index - 1].label] : null;
+    return [period.label, Number.isFinite(current) && Number.isFinite(prior) && prior !== 0 ? (current / prior) - 1 : null];
+  }));
+  const grossMarginRates = Object.fromEntries(periods.map(period => [
+    period.label,
+    Number.isFinite(period.grossMargin)
+      ? period.grossMargin
+      : Number.isFinite(grossProfitValues[period.label]) && Number.isFinite(revenueValues[period.label]) && revenueValues[period.label] !== 0
+        ? grossProfitValues[period.label] / revenueValues[period.label]
+        : null,
+  ]));
+  const sgnaRates = Object.fromEntries(periods.map(period => {
+    const revenue = revenueValues[period.label];
+    const value = sgnaValues[period.label];
+    return [period.label, Number.isFinite(value) && Number.isFinite(revenue) && revenue !== 0 ? value / revenue : null];
+  }));
+  const ebitdaMarginRates = Object.fromEntries(periods.map(period => [
+    period.label,
+    Number.isFinite(period.ebitdaMargin)
+      ? period.ebitdaMargin
+      : Number.isFinite(ebitdaValues[period.label]) && Number.isFinite(revenueValues[period.label]) && revenueValues[period.label] !== 0
+        ? ebitdaValues[period.label] / revenueValues[period.label]
+        : null,
+  ]));
+  const capexRates = Object.fromEntries(periods.map(period => {
+    const revenue = revenueValues[period.label];
+    const value = capexValues[period.label];
+    return [period.label, Number.isFinite(value) && Number.isFinite(revenue) && revenue !== 0 ? value / revenue : null];
+  }));
+  const pretaxRates = Object.fromEntries(periods.map(period => [
+    period.label,
+    Number.isFinite(period.pretaxUfcfConversion)
+      ? period.pretaxUfcfConversion
+      : Number.isFinite(pretaxValues[period.label]) && Number.isFinite(ebitdaValues[period.label]) && ebitdaValues[period.label] !== 0
+        ? pretaxValues[period.label] / ebitdaValues[period.label]
+        : null,
+  ]));
+
+  const rows = [];
+  rows.push(createSectionHeader('revenue', 'Revenue', periods));
+  if (financialProfileSections.revenue) {
+    rows.push(createAbsoluteRow('Total Revenue', periods, revenueValues, currency, historicalPeriods, forwardPeriods));
+    rows.push(createRateRow('% Y/Y growth', periods, revenueGrowthRates, historicalPeriods, forwardPeriods));
+  }
+
+  rows.push(createSectionHeader('ebitda', 'EBITDA', periods));
+  if (financialProfileSections.ebitda) {
+    rows.push(createAbsoluteRow('Gross Profit', periods, grossProfitValues, currency, historicalPeriods, forwardPeriods));
+    rows.push(createRateRow('% revenue', periods, grossMarginRates, historicalPeriods, forwardPeriods));
+    rows.push(createAbsoluteRow('SG&A Expenses', periods, sgnaValues, currency, historicalPeriods, forwardPeriods));
+    rows.push(createRateRow('% revenue', periods, sgnaRates, historicalPeriods, forwardPeriods));
+    rows.push(createAbsoluteRow('Total EBITDA', periods, ebitdaValues, currency, historicalPeriods, forwardPeriods));
+    rows.push(createRateRow('% margin', periods, ebitdaMarginRates, historicalPeriods, forwardPeriods));
+  }
+
+  rows.push(createSectionHeader('capex', 'Capex & FCF', periods));
+  if (financialProfileSections.capex) {
+    rows.push(createAbsoluteRow('Capex', periods, capexValues, currency, historicalPeriods, forwardPeriods));
+    rows.push(createRateRow('% revenue', periods, capexRates, historicalPeriods, forwardPeriods));
+    rows.push(createAbsoluteRow('Pre-tax uFCF', periods, pretaxValues, currency, historicalPeriods, forwardPeriods));
+    rows.push(createRateRow('% EBITDA', periods, pretaxRates, historicalPeriods, forwardPeriods));
+    rows.push(createAbsoluteRow('Tax', periods, taxValues, currency, historicalPeriods, forwardPeriods));
+    rows.push(createAbsoluteRow('Interest', periods, interestValues, currency, historicalPeriods, forwardPeriods));
+    rows.push(createAbsoluteRow('Post-tax Cash Flow', periods, postTaxValues, currency, historicalPeriods, forwardPeriods));
+    rows.push(createAbsoluteRow('Cash EOP', periods, cashValues, currency, historicalPeriods, forwardPeriods));
+  }
+
+  modelTableBody.innerHTML = rows.join('');
+
+  const summaryItems = [
+    ['Entry EV', formatModelMoney(scaleReturnValue(returnsResult.entry?.entryEv, returnsResult), currency)],
+    ['Sponsor Equity', formatModelMoney(scaleReturnValue(returnsResult.entry?.pfEquity, returnsResult), currency)],
+    ['Exit EV', formatModelMoney(scaleReturnValue(returnsResult.exit?.exitEv, returnsResult), currency)],
+    ['Exit Equity', formatModelMoney(scaleReturnValue(returnsResult.exit?.pfEquityExit, returnsResult), currency)],
+    ['MoM', formatModelMultiple(returnsResult.returns?.mom)],
+    ['IRR', formatModelPercent(returnsResult.returns?.irr)],
+  ];
+
+  returnsStrip.innerHTML = summaryItems.map(([label, value]) => `
+    <div class="returns-metric">
+      <span>${escapeHtml(label)}</span>
+      <strong>${escapeHtml(value)}</strong>
+    </div>
+  `).join('');
+}
+
+function runReturnsModel() {
+  if (!cimExtractionResult) {
+    resetReturnsResults();
+    return;
+  }
+
+  if (!window.ReturnsModel || typeof window.ReturnsModel.calculateReturns !== 'function') {
+    setCimError('Returns model is unavailable right now.');
+    return;
+  }
+
+  const snapshot = captureFinancialProfileSnapshot();
+
+  try {
+    const assumptions = collectReturnsAssumptions();
+    const result = window.ReturnsModel.calculateReturns(cimExtractionResult, assumptions);
+
+    if (result.validation?.errors?.length) {
+      restoreFinancialProfileSnapshot(snapshot);
+      setCimError(result.validation.errors[0] || 'Could not run the returns model with those assumptions.');
+      return;
+    }
+
+    returnsModelResult = result;
+    renderFinancialProfile(cimExtractionResult, result);
+    financialProfile.classList.add('visible');
+    setCimError('');
+    setReturnsModelStatus('Returns model updated.');
+  } catch (error) {
+    console.error('Returns model rerender failed:', error);
+    restoreFinancialProfileSnapshot(snapshot);
+    setCimError('Could not refresh the returns model. The last valid view is still shown.');
   }
 }
 
@@ -2032,6 +2916,27 @@ cimFileInput.addEventListener('change', event => {
 
 returnsRunBtn.addEventListener('click', () => {
   runReturnsModel();
+});
+
+modelTableBody.addEventListener('click', event => {
+  const toggle = event.target.closest('[data-section-toggle]');
+  if (!toggle) return;
+  const sectionKey = toggle.getAttribute('data-section-toggle');
+  if (!sectionKey || !(sectionKey in financialProfileSections)) return;
+  financialProfileSections[sectionKey] = !financialProfileSections[sectionKey];
+  if (cimExtractionResult && returnsModelResult) {
+    const snapshot = captureFinancialProfileSnapshot();
+    try {
+      renderFinancialProfile(cimExtractionResult, returnsModelResult);
+      financialProfile.classList.add('visible');
+      setCimError('');
+    } catch (error) {
+      console.error('Financial profile section toggle failed:', error);
+      financialProfileSections[sectionKey] = !financialProfileSections[sectionKey];
+      restoreFinancialProfileSnapshot(snapshot);
+      setCimError('Could not update the financial profile. The last valid view is still shown.');
+    }
+  }
 });
 
 $('error-close').addEventListener('click', hideError);
