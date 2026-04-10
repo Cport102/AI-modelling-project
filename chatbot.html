@@ -2343,6 +2343,17 @@ function renderFinancialProfile(cimResult, returnsResult) {
   ]));
   const capexValues = Object.fromEntries(periods.map(period => [period.label, period.capex]));
   const pretaxValues = Object.fromEntries(periods.map(period => [period.label, period.pretaxUfcf]));
+  const workingCapitalValues = Object.fromEntries(periods.map(period => {
+    const pretax = pretaxValues[period.label];
+    const ebitda = ebitdaValues[period.label];
+    const capex = capexValues[period.label];
+    return [
+      period.label,
+      Number.isFinite(pretax) && Number.isFinite(ebitda) && Number.isFinite(capex)
+        ? pretax - ebitda + capex
+        : null,
+    ];
+  }));
   const taxValues = Object.fromEntries(periods.map(period => [period.label, period.tax]));
   const interestValues = Object.fromEntries(periods.map(period => [period.label, period.interest]));
   const postTaxValues = Object.fromEntries(periods.map(period => [period.label, period.postTaxCashFlow]));
@@ -2409,6 +2420,7 @@ function renderFinancialProfile(cimResult, returnsResult) {
   if (financialProfileSections.capex) {
     rows.push(createAbsoluteRow('Capex', periods, capexValues, currency, historicalPeriods, forwardPeriods));
     rows.push(createRateRow('% revenue', periods, capexRates, historicalPeriods, forwardPeriods));
+    rows.push(createAbsoluteRow('Δ Working Cap.', periods, workingCapitalValues, currency, historicalPeriods, forwardPeriods));
     rows.push(createAbsoluteRow('Pre-tax uFCF', periods, pretaxValues, currency, historicalPeriods, forwardPeriods));
     rows.push(createRateRow('% EBITDA', periods, pretaxRates, historicalPeriods, forwardPeriods));
     rows.push(createAbsoluteRow('Tax', periods, taxValues, currency, historicalPeriods, forwardPeriods));
