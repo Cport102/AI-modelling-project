@@ -1226,6 +1226,7 @@
               </div>
 
               <button class="secondary-btn" id="returns-run-btn" type="button">Run returns model</button>
+              <button class="secondary-btn" id="download-excel-btn" type="button" disabled>Download Excel</button>
             </div>
 
             <div id="mini-charts" class="mini-charts"></div>
@@ -1247,6 +1248,7 @@
 </div>
 
 <script src="returns-model-v2.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <script>
 // ═══════════════════════════════════════════════
 //  STATE
@@ -1298,6 +1300,7 @@ const cimResults = $('cim-results');
 const cimWarnings = $('cim-warnings');
 const financialProfile = $('financial-profile');
 const returnsRunBtn = $('returns-run-btn');
+const downloadExcelBtn = $('download-excel-btn');
 const miniCharts = $('mini-charts');
 const modelTableHead = $('model-table-head');
 const modelTableBody = $('model-table-body');
@@ -1500,6 +1503,9 @@ function resetReturnsResults() {
   modelTableHead.innerHTML = '';
   modelTableBody.innerHTML = '';
   returnsStrip.innerHTML = '';
+  if (downloadExcelBtn) {
+    downloadExcelBtn.disabled = true;
+  }
 }
 
 function captureFinancialProfileSnapshot() {
@@ -1676,6 +1682,219 @@ function getChartAxisLabel(label) {
 
   const suffixMatch = text.match(/([A-Z])$/i);
   return suffixMatch ? text.replace(suffixMatch[1], '').trim() : text;
+}
+
+function sanitizeDownloadFileName(value) {
+  return String(value || 'transfer-sheet')
+    .replace(/[<>:"/\\|?*\x00-\x1F]+/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/[. ]+$/g, '')
+    || 'transfer-sheet';
+}
+
+function getFiscalYearEndDate(fiscalYear, fiscalYearEndMonth) {
+  if (!Number.isInteger(fiscalYear) || !Number.isInteger(fiscalYearEndMonth)) return null;
+  return new Date(fiscalYear, fiscalYearEndMonth, 0);
+}
+
+function cloneWorksheetCell(cell) {
+  if (!cell || typeof cell !== 'object') return null;
+  return {
+    ...cell,
+    s: cell.s ? JSON.parse(JSON.stringify(cell.s)) : cell.s,
+  };
+}
+
+function getTemplateStyleCell(ws, rowNumber, colIndex, templateStartCol, templateEndCol) {
+  const boundedCol = Math.min(Math.max(colIndex, templateStartCol), templateEndCol);
+  const directAddress = XLSX.utils.encode_cell({ r: rowNumber - 1, c: boundedCol });
+  if (ws[directAddress]) {
+    return cloneWorksheetCell(ws[directAddress]);
+  }
+
+  for (let scanCol = templateEndCol; scanCol >= templateStartCol; scanCol -= 1) {
+    const fallbackAddress = XLSX.utils.encode_cell({ r: rowNumber - 1, c: scanCol });
+    if (ws[fallbackAddress]) {
+      return cloneWorksheetCell(ws[fallbackAddress]);
+    }
+  }
+
+  return null;
+}
+
+function setWorksheetCell(ws, address, type, value, templateCell = null) {
+  const existingCell = ws[address];
+  const nextCell = cloneWorksheetCell(existingCell) || cloneWorksheetCell(templateCell) || {};
+
+  delete nextCell.v;
+  delete nextCell.w;
+  delete nextCell.f;
+  delete nextCell.r;
+  delete nextCell.h;
+
+  if (value === null || value === undefined || value === '') {
+    nextCell.t = 'z';
+    ws[address] = nextCell;
+    return;
+  }
+
+  nextCell.t = type;
+  nextCell.v = value;
+  ws[address] = nextCell;
+}
+
+async function downloadFinancialExcel() {
+  if (!returnsModelResult || !cimExtractionResult) {
+    setCimError('Run the returns model before downloading Excel.');
+    return;
+  }
+
+  if (!window.XLSX) {
+    setCimError('Excel export library failed to load.');
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/transfer-template', { cache: 'no-store' });
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      throw new Error(payload.error || 'Could not load transfer-template.xlsm.');
+    }
+
+    const workbook = XLSX.read(await response.arrayBuffer(), {
+      type: 'array',
+      bookVBA: true,
+      cellStyles: true,
+      cellNF: true,
+      cellDates: true,
+    });
+    const worksheet = workbook.Sheets['Transfer Sheet'];
+    if (!worksheet) {
+      throw new Error('The workbook is missing the "Transfer Sheet" tab.');
+    }
+
+    const periods = buildFinancialDisplayPeriods(returnsModelResult);
+    const fiscalYearEndMonth = Number(returnsModelResult?.assumptions?.fiscalYearEndMonth || collectReturnsAssumptions().fiscalYearEndMonth || 12);
+    const dataStartCol = 5;
+    const templateEndCol = 15;
+    const dataEndCol = dataStartCol + Math.max(periods.length, 11) - 1;
+
+    for (let row = 4; row <= 24; row += 1) {
+      for (let col = dataStartCol; col <= dataEndCol; col += 1) {
+        const address = XLSX.utils.encode_cell({ r: row - 1, c: col });
+        const templateCell = getTemplateStyleCell(worksheet, row, col, dataStartCol, templateEndCol);
+        setWorksheetCell(worksheet, address, 'z', null, templateCell);
+      }
+    }
+
+    setWorksheetCell(worksheet, 'B2', 's', 'x');
+    setWorksheetCell(worksheet, 'C2', 's', 'Transfer Sheet');
+    setWorksheetCell(worksheet, 'B27', 's', 'x');
+    setWorksheetCell(worksheet, 'C27', 's', 'End');
+
+    const rowLabels = {
+      D5: 'Revenue',
+      D6: 'growth (%)',
+      D8: 'Gross Profit',
+      D9: '% Revenue',
+      D12: 'SG&A Expenses',
+      D13: '% Revenue',
+      D15: 'Total EBITDA',
+      D16: 'margin (%)',
+      D18: 'CapEx',
+      D19: '% Revenue',
+      D21: 'Change in working capital',
+      D23: 'uFCF',
+      D24: 'Conversion',
+    };
+
+    for (const [cell, label] of Object.entries(rowLabels)) {
+      setWorksheetCell(worksheet, cell, 's', label);
+    }
+
+    for (let index = 0; index < periods.length; index += 1) {
+      const period = periods[index];
+      const col = dataStartCol + index;
+      const colLetter = XLSX.utils.encode_col(col);
+      const getTemplateCellForRow = (rowNumber) => getTemplateStyleCell(worksheet, rowNumber, col, dataStartCol, templateEndCol);
+      const revenue = period.revenue;
+      const priorRevenue = index > 0 ? periods[index - 1].revenue : null;
+      const grossProfit = period.grossProfit;
+      const ebitda = period.ebitda;
+      const sgna = Number.isFinite(period.sgna)
+        ? period.sgna
+        : Number.isFinite(grossProfit) && Number.isFinite(ebitda)
+          ? grossProfit - ebitda
+          : null;
+      const capex = Number.isFinite(period.capex) ? -1 * Math.abs(period.capex) : null;
+      const pretaxUfcf = period.pretaxUfcf;
+      const revenueGrowth = index > 0 && Number.isFinite(revenue) && Number.isFinite(priorRevenue) && priorRevenue !== 0
+        ? (revenue / priorRevenue) - 1
+        : null;
+      const grossMargin = Number.isFinite(period.grossMargin)
+        ? period.grossMargin
+        : Number.isFinite(grossProfit) && Number.isFinite(revenue) && revenue !== 0
+          ? grossProfit / revenue
+          : null;
+      const sgnaMargin = Number.isFinite(sgna) && Number.isFinite(revenue) && revenue !== 0 ? sgna / revenue : null;
+      const ebitdaMargin = Number.isFinite(period.ebitdaMargin)
+        ? period.ebitdaMargin
+        : Number.isFinite(ebitda) && Number.isFinite(revenue) && revenue !== 0
+          ? ebitda / revenue
+          : null;
+      const capexMargin = Number.isFinite(capex) && Number.isFinite(revenue) && revenue !== 0
+        ? Math.abs(capex) / revenue
+        : null;
+      const conversion = Number.isFinite(period.pretaxUfcfConversion)
+        ? period.pretaxUfcfConversion
+        : Number.isFinite(pretaxUfcf) && Number.isFinite(ebitda) && ebitda !== 0
+          ? pretaxUfcf / ebitda
+          : null;
+      const fiscalYearEndDate = getFiscalYearEndDate(period.fiscalYear, fiscalYearEndMonth);
+
+      setWorksheetCell(worksheet, `${colLetter}4`, 'd', fiscalYearEndDate, getTemplateCellForRow(4));
+      setWorksheetCell(worksheet, `${colLetter}5`, 'n', revenue, getTemplateCellForRow(5));
+      setWorksheetCell(worksheet, `${colLetter}6`, 'n', revenueGrowth, getTemplateCellForRow(6));
+      setWorksheetCell(worksheet, `${colLetter}8`, 'n', grossProfit, getTemplateCellForRow(8));
+      setWorksheetCell(worksheet, `${colLetter}9`, 'n', grossMargin, getTemplateCellForRow(9));
+      setWorksheetCell(worksheet, `${colLetter}12`, 'n', sgna, getTemplateCellForRow(12));
+      setWorksheetCell(worksheet, `${colLetter}13`, 'n', sgnaMargin, getTemplateCellForRow(13));
+      setWorksheetCell(worksheet, `${colLetter}15`, 'n', ebitda, getTemplateCellForRow(15));
+      setWorksheetCell(worksheet, `${colLetter}16`, 'n', ebitdaMargin, getTemplateCellForRow(16));
+      setWorksheetCell(worksheet, `${colLetter}18`, 'n', capex, getTemplateCellForRow(18));
+      setWorksheetCell(worksheet, `${colLetter}19`, 'n', capexMargin, getTemplateCellForRow(19));
+      setWorksheetCell(worksheet, `${colLetter}21`, 'n', null, getTemplateCellForRow(21));
+      setWorksheetCell(worksheet, `${colLetter}23`, 'n', pretaxUfcf, getTemplateCellForRow(23));
+      setWorksheetCell(worksheet, `${colLetter}24`, 'n', conversion, getTemplateCellForRow(24));
+    }
+
+    const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+    range.e.c = Math.max(range.e.c, dataEndCol);
+    range.e.r = Math.max(range.e.r, 26);
+    worksheet['!ref'] = XLSX.utils.encode_range(range);
+
+    const output = XLSX.write(workbook, {
+      type: 'array',
+      bookType: 'xlsm',
+      bookVBA: true,
+      cellStyles: true,
+    });
+    const blob = new Blob([output], { type: 'application/vnd.ms-excel.sheet.macroEnabled.12' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${sanitizeDownloadFileName(cimExtractionResult?.structured?.company_name || 'financial-profile')}-transfer-sheet.xlsm`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    setReturnsModelStatus('Excel file downloaded.');
+    setCimError('');
+  } catch (error) {
+    console.error('Excel export failed:', error);
+    setCimError(error.message || 'Could not generate the Excel file.');
+  }
 }
 
 function formatReturnsMoney(value, result) {
@@ -2467,6 +2686,9 @@ function runReturnsModel() {
 
     if (result.validation?.errors?.length) {
       restoreFinancialProfileSnapshot(snapshot);
+      if (downloadExcelBtn) {
+        downloadExcelBtn.disabled = !returnsModelResult;
+      }
       setCimError(result.validation.errors[0] || 'Could not run the returns model with those assumptions.');
       return;
     }
@@ -2474,11 +2696,17 @@ function runReturnsModel() {
     returnsModelResult = result;
     renderFinancialProfile(cimExtractionResult, result);
     financialProfile.classList.add('visible');
+    if (downloadExcelBtn) {
+      downloadExcelBtn.disabled = false;
+    }
     setCimError('');
     setReturnsModelStatus('Returns model updated.');
   } catch (error) {
     console.error('Returns model rerender failed:', error);
     restoreFinancialProfileSnapshot(snapshot);
+    if (downloadExcelBtn) {
+      downloadExcelBtn.disabled = !returnsModelResult;
+    }
     setCimError('Could not refresh the returns model. The last valid view is still shown.');
   }
 }
@@ -2928,6 +3156,10 @@ cimFileInput.addEventListener('change', event => {
 
 returnsRunBtn.addEventListener('click', () => {
   runReturnsModel();
+});
+
+downloadExcelBtn.addEventListener('click', () => {
+  downloadFinancialExcel();
 });
 
 modelTableBody.addEventListener('click', event => {

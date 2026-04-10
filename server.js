@@ -26,6 +26,7 @@ const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'application/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
+  '.xlsm': 'application/vnd.ms-excel.sheet.macroEnabled.12',
   '.png': 'image/png',
   '.svg': 'image/svg+xml',
 };
@@ -335,6 +336,17 @@ function handleLogout(req, res) {
   sendJson(res, 200, { ok: true, authDisabled: true });
 }
 
+function handleTransferTemplate(req, res) {
+  const templatePath = path.join(ROOT_DIR, 'transfer-template.xlsm');
+
+  if (!fs.existsSync(templatePath)) {
+    sendJson(res, 404, { error: 'transfer-template.xlsm was not found on the server.' });
+    return;
+  }
+
+  sendFile(res, templatePath);
+}
+
 const server = http.createServer(async (req, res) => {
   const requestUrl = new URL(req.url, `http://${req.headers.host}`);
   const pathname = requestUrl.pathname;
@@ -437,6 +449,16 @@ const server = http.createServer(async (req, res) => {
     }
 
     handleLogout(req, res);
+    return;
+  }
+
+  if (pathname === '/api/transfer-template') {
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      sendJson(res, 405, { error: 'Method not allowed' });
+      return;
+    }
+
+    handleTransferTemplate(req, res);
     return;
   }
 
