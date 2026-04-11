@@ -432,6 +432,11 @@
     }
 
     .assumptions-bar {
+      display: grid;
+      gap: 10px;
+    }
+
+    .assumptions-card {
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
@@ -442,22 +447,148 @@
       background: #fcfbf8;
     }
 
-    .assumptions-bar .returns-field {
+    .assumptions-card .returns-field {
       display: grid;
       gap: 5px;
       min-width: 118px;
       flex: 1 1 118px;
     }
 
-    .assumptions-bar .returns-field label {
+    .assumptions-card .returns-field label {
       font-size: 11px;
       color: var(--text-muted);
       font-weight: 600;
       letter-spacing: .02em;
     }
 
-    .assumptions-bar .returns-field input,
-    .assumptions-bar .returns-field select {
+    .assumptions-card .returns-field input,
+    .assumptions-card .returns-field select {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+      color: var(--text);
+      padding: 8px 10px;
+      font-size: 12.5px;
+      min-height: 38px;
+    }
+
+    .assumptions-card-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .assumptions-card-title {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .assumptions-card-note {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .cagr-header-trigger {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      width: 100%;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .cagr-header-trigger span:last-child {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .cagr-popup {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 96px 20px 20px;
+      background: rgba(27, 31, 36, 0.18);
+      z-index: 30;
+    }
+
+    .cagr-popup.visible {
+      display: flex;
+    }
+
+    .cagr-popup-panel {
+      width: min(420px, 100%);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: #fcfbf8;
+      box-shadow: 0 22px 60px rgba(27, 31, 36, 0.16);
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .cagr-popup-header {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .cagr-popup-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .cagr-popup-subtitle {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .cagr-popup-close {
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text-muted);
+      border-radius: 10px;
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .cagr-popup-fields {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .cagr-popup .returns-field {
+      display: grid;
+      gap: 5px;
+    }
+
+    .cagr-popup .returns-field label {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
+      letter-spacing: .02em;
+    }
+
+    .cagr-popup .returns-field select {
       width: 100%;
       border: 1px solid var(--border);
       border-radius: 10px;
@@ -551,7 +682,7 @@
 
     .model-table .value-cell,
     .model-table .cagr-col {
-      text-align: right;
+      text-align: center;
     }
 
     .model-table .forecast-col {
@@ -1175,11 +1306,15 @@
 
           <div id="financial-profile" class="financial-profile">
             <div class="assumptions-bar">
-              <div class="returns-field">
+              <div class="assumptions-card">
+                <div class="assumptions-card-header">
+                  <span class="assumptions-card-title">Core Modelling Assumptions</span>
+                </div>
+                <div class="returns-field">
             <label for="assumption-entry-date">Entry Date</label>
             <input id="assumption-entry-date" type="date" />
-              </div>
-              <div class="returns-field">
+                </div>
+                <div class="returns-field">
             <label for="assumption-fiscal-year-end-month">Fiscal Year-End Month</label>
             <select id="assumption-fiscal-year-end-month">
               <option value="1">January</option>
@@ -1195,38 +1330,39 @@
               <option value="11">November</option>
               <option value="12">December</option>
             </select>
-              </div>
-              <div class="returns-field">
+                </div>
+                <div class="returns-field">
             <label for="assumption-entry-multiple">Entry Multiple</label>
             <input id="assumption-entry-multiple" type="number" step="0.1" />
-              </div>
-              <div class="returns-field">
+                </div>
+                <div class="returns-field">
             <label for="assumption-exit-multiple">Exit Multiple</label>
             <input id="assumption-exit-multiple" type="number" step="0.1" />
-              </div>
-              <div class="returns-field">
+                </div>
+                <div class="returns-field">
             <label for="assumption-leverage">Leverage</label>
             <input id="assumption-leverage" type="number" step="0.1" />
-              </div>
-              <div class="returns-field">
+                </div>
+                <div class="returns-field">
             <label for="assumption-minimum-cash">Minimum Cash</label>
             <input id="assumption-minimum-cash" type="number" step="0.01" placeholder="Optional override" />
-              </div>
-              <div class="returns-field">
+                </div>
+                <div class="returns-field">
             <label for="assumption-hold-years">Hold Years</label>
             <input id="assumption-hold-years" type="number" step="1" min="1" />
-              </div>
-              <div class="returns-field">
+                </div>
+                <div class="returns-field">
             <label for="assumption-pretax-ufcf-conversion">Pre-tax uFCF Conversion %</label>
             <input id="assumption-pretax-ufcf-conversion" type="number" step="0.01" />
-              </div>
-              <div class="returns-field">
+                </div>
+                <div class="returns-field">
             <label for="assumption-mep">Management Equity Plan %</label>
             <input id="assumption-mep" type="number" step="0.01" />
-              </div>
+                </div>
 
-              <button class="secondary-btn" id="returns-run-btn" type="button">Run returns model</button>
-              <button class="secondary-btn" id="download-excel-btn" type="button" disabled>Download Excel</button>
+                <button class="secondary-btn" id="returns-run-btn" type="button">Run returns model</button>
+                <button class="secondary-btn" id="download-excel-btn" type="button" disabled>Download Excel</button>
+              </div>
             </div>
 
             <div id="mini-charts" class="mini-charts"></div>
@@ -1236,6 +1372,38 @@
                 <thead id="model-table-head"></thead>
                 <tbody id="model-table-body"></tbody>
               </table>
+            </div>
+
+            <div id="cagr-popup" class="cagr-popup" aria-hidden="true">
+              <div class="cagr-popup-panel" role="dialog" aria-modal="true" aria-labelledby="cagr-popup-title">
+                <div class="cagr-popup-header">
+                  <div>
+                    <div id="cagr-popup-title" class="cagr-popup-title">CAGR Display Settings</div>
+                    <div class="cagr-popup-subtitle">These affect the table view only</div>
+                  </div>
+                  <button id="cagr-popup-close" class="cagr-popup-close" type="button" aria-label="Close CAGR settings">×</button>
+                </div>
+                <div id="cagr-popup-hist-fields" class="cagr-popup-fields">
+                  <div class="returns-field">
+                    <label for="hist-cagr-start">Hist CAGR Start</label>
+                    <select id="hist-cagr-start"></select>
+                  </div>
+                  <div class="returns-field">
+                    <label for="hist-cagr-end">Hist CAGR End</label>
+                    <select id="hist-cagr-end"></select>
+                  </div>
+                </div>
+                <div id="cagr-popup-forecast-fields" class="cagr-popup-fields">
+                  <div class="returns-field">
+                    <label for="forecast-cagr-start">Frcst CAGR Start</label>
+                    <select id="forecast-cagr-start"></select>
+                  </div>
+                  <div class="returns-field">
+                    <label for="forecast-cagr-end">Frcst CAGR End</label>
+                    <select id="forecast-cagr-end"></select>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div id="returns-strip" class="returns-strip"></div>
@@ -1256,6 +1424,7 @@
 let conversation  = [];   // [{role:'user'|'assistant', content:'...'}]
 let abortCtrl     = null; // AbortController for current stream
 let isStreaming   = false;
+let activeCagrPopupType = null;
 
 // API calls go to the local proxy server — key never touches the browser
 const API_ENDPOINT = (window.location.protocol === 'http:' || window.location.protocol === 'https:')
@@ -1305,6 +1474,11 @@ const miniCharts = $('mini-charts');
 const modelTableHead = $('model-table-head');
 const modelTableBody = $('model-table-body');
 const returnsStrip = $('returns-strip');
+const cagrPopup = $('cagr-popup');
+const cagrPopupCloseBtn = $('cagr-popup-close');
+const cagrPopupTitle = $('cagr-popup-title');
+const cagrPopupHistFields = $('cagr-popup-hist-fields');
+const cagrPopupForecastFields = $('cagr-popup-forecast-fields');
 const assumptionEntryDate = $('assumption-entry-date');
 const assumptionFiscalYearEndMonth = $('assumption-fiscal-year-end-month');
 const assumptionEntryMultiple = $('assumption-entry-multiple');
@@ -1314,6 +1488,10 @@ const assumptionMinimumCash = $('assumption-minimum-cash');
 const assumptionHoldYears = $('assumption-hold-years');
 const assumptionPretaxUfcfConversion = $('assumption-pretax-ufcf-conversion');
 const assumptionMep = $('assumption-mep');
+const histCagrStartInput = $('hist-cagr-start');
+const histCagrEndInput = $('hist-cagr-end');
+const forecastCagrStartInput = $('forecast-cagr-start');
+const forecastCagrEndInput = $('forecast-cagr-end');
 const messagesEl  = $('messages');
 const welcomeEl   = $('welcome');
 const typingEl    = $('typing-indicator');
@@ -1503,6 +1681,11 @@ function resetReturnsResults() {
   modelTableHead.innerHTML = '';
   modelTableBody.innerHTML = '';
   returnsStrip.innerHTML = '';
+  closeCagrPopup();
+  if (histCagrStartInput) histCagrStartInput.innerHTML = '';
+  if (histCagrEndInput) histCagrEndInput.innerHTML = '';
+  if (forecastCagrStartInput) forecastCagrStartInput.innerHTML = '';
+  if (forecastCagrEndInput) forecastCagrEndInput.innerHTML = '';
   if (downloadExcelBtn) {
     downloadExcelBtn.disabled = true;
   }
@@ -1647,6 +1830,131 @@ function calculateCagr(startValue, endValue, periods) {
   return Math.pow(endValue / startValue, 1 / periods) - 1;
 }
 
+function setSelectOptions(select, options, selectedValue) {
+  if (!select) return;
+  select.innerHTML = options.map(option => `
+    <option value="${escapeHtml(option.value)}"${option.value === selectedValue ? ' selected' : ''}>${escapeHtml(option.label)}</option>
+  `).join('');
+}
+
+function getDefaultCagrRangeValues(periods) {
+  const historical = periods.filter(period => period.bucket === 'historical');
+  const all = periods.slice();
+
+  return {
+    histStart: historical[0]?.label || all[0]?.label || '',
+    histEnd: historical[historical.length - 1]?.label || all[Math.max(all.length - 1, 0)]?.label || '',
+    forecastStart: historical[historical.length - 1]?.label || all[0]?.label || '',
+    forecastEnd: all[all.length - 1]?.label || '',
+  };
+}
+
+function populateCagrRangeInputs(periods) {
+  const defaults = getDefaultCagrRangeValues(periods);
+  const histOptions = periods
+    .filter(period => period.bucket === 'historical')
+    .map(period => ({ value: period.label, label: period.label }));
+  const allOptions = periods.map(period => ({ value: period.label, label: period.label }));
+
+  const currentHistStart = histOptions.some(option => option.value === histCagrStartInput?.value)
+    ? histCagrStartInput.value
+    : defaults.histStart;
+  const currentHistEnd = histOptions.some(option => option.value === histCagrEndInput?.value)
+    ? histCagrEndInput.value
+    : defaults.histEnd;
+  const currentForecastStart = allOptions.some(option => option.value === forecastCagrStartInput?.value)
+    ? forecastCagrStartInput.value
+    : defaults.forecastStart;
+  const currentForecastEnd = allOptions.some(option => option.value === forecastCagrEndInput?.value)
+    ? forecastCagrEndInput.value
+    : defaults.forecastEnd;
+
+  setSelectOptions(histCagrStartInput, histOptions, currentHistStart);
+  setSelectOptions(histCagrEndInput, histOptions, currentHistEnd);
+  setSelectOptions(forecastCagrStartInput, allOptions, currentForecastStart);
+  setSelectOptions(forecastCagrEndInput, allOptions, currentForecastEnd);
+}
+
+function getSelectedCagrRange(periods, startValue, endValue, fallbackStartValue, fallbackEndValue) {
+  const startLabel = periods.some(period => period.label === startValue) ? startValue : fallbackStartValue;
+  const endLabel = periods.some(period => period.label === endValue) ? endValue : fallbackEndValue;
+  const startIndex = periods.findIndex(period => period.label === startLabel);
+  const endIndex = periods.findIndex(period => period.label === endLabel);
+
+  if (startIndex === -1 || endIndex === -1 || endIndex <= startIndex) {
+    return {
+      startLabel,
+      endLabel,
+      startIndex,
+      endIndex,
+      periods: 0,
+      valid: false,
+      label: startLabel && endLabel ? `${startLabel}-${endLabel}` : formatDash(),
+    };
+  }
+
+  return {
+    startLabel,
+    endLabel,
+    startIndex,
+    endIndex,
+    periods: endIndex - startIndex,
+    valid: true,
+    label: `${startLabel}-${endLabel}`,
+  };
+}
+
+function getCagrSettings(periods) {
+  const defaults = getDefaultCagrRangeValues(periods);
+  const historical = periods.filter(period => period.bucket === 'historical');
+
+  return {
+    historical: getSelectedCagrRange(
+      historical,
+      histCagrStartInput?.value,
+      histCagrEndInput?.value,
+      defaults.histStart,
+      defaults.histEnd
+    ),
+    forecast: getSelectedCagrRange(
+      periods,
+      forecastCagrStartInput?.value,
+      forecastCagrEndInput?.value,
+      defaults.forecastStart,
+      defaults.forecastEnd
+    ),
+  };
+}
+
+function calculateCagrFromRange(values, periods, range) {
+  if (!range?.valid) return null;
+  const startPeriod = periods[range.startIndex];
+  const endPeriod = periods[range.endIndex];
+  if (!startPeriod || !endPeriod) return null;
+  return calculateCagr(values[startPeriod.label], values[endPeriod.label], range.periods);
+}
+
+function closeCagrPopup() {
+  activeCagrPopupType = null;
+  if (!cagrPopup) return;
+  cagrPopup.classList.remove('visible');
+  cagrPopup.setAttribute('aria-hidden', 'true');
+}
+
+function openCagrPopup(type) {
+  if (!cagrPopup) return;
+
+  activeCagrPopupType = type === 'forecast' ? 'forecast' : 'historical';
+  cagrPopupTitle.textContent = activeCagrPopupType === 'forecast' ? 'Forecast CAGR Settings' : 'Historical CAGR Settings';
+  cagrPopupHistFields.hidden = activeCagrPopupType !== 'historical';
+  cagrPopupForecastFields.hidden = activeCagrPopupType !== 'forecast';
+  cagrPopup.classList.add('visible');
+  cagrPopup.setAttribute('aria-hidden', 'false');
+
+  const focusTarget = activeCagrPopupType === 'forecast' ? forecastCagrStartInput : histCagrStartInput;
+  focusTarget?.focus();
+}
+
 function renderModelCell(value, className = '') {
   const text = value === null || value === undefined || value === '' ? formatDash() : String(value);
   const classes = [className, text === formatDash() ? 'placeholder-cell' : ''].filter(Boolean).join(' ');
@@ -1744,6 +2052,18 @@ function setWorksheetCell(ws, address, type, value, templateCell = null) {
   ws[address] = nextCell;
 }
 
+function getPeriodWorkingCapitalChange(period) {
+  if (!period) return null;
+
+  const pretaxUfcf = period.pretaxUfcf;
+  const ebitda = period.ebitda;
+  const capex = period.capex;
+
+  return Number.isFinite(pretaxUfcf) && Number.isFinite(ebitda) && Number.isFinite(capex)
+    ? pretaxUfcf - ebitda + capex
+    : null;
+}
+
 async function downloadFinancialExcel() {
   if (!returnsModelResult || !cimExtractionResult) {
     setCimError('Run the returns model before downloading Excel.');
@@ -1829,6 +2149,7 @@ async function downloadFinancialExcel() {
           : null;
       const capex = Number.isFinite(period.capex) ? -1 * Math.abs(period.capex) : null;
       const pretaxUfcf = period.pretaxUfcf;
+      const workingCapitalChange = getPeriodWorkingCapitalChange({ ...period, capex });
       const revenueGrowth = index > 0 && Number.isFinite(revenue) && Number.isFinite(priorRevenue) && priorRevenue !== 0
         ? (revenue / priorRevenue) - 1
         : null;
@@ -1864,7 +2185,7 @@ async function downloadFinancialExcel() {
       setWorksheetCell(worksheet, `${colLetter}16`, 'n', ebitdaMargin, getTemplateCellForRow(16));
       setWorksheetCell(worksheet, `${colLetter}18`, 'n', capex, getTemplateCellForRow(18));
       setWorksheetCell(worksheet, `${colLetter}19`, 'n', capexMargin, getTemplateCellForRow(19));
-      setWorksheetCell(worksheet, `${colLetter}21`, 'n', null, getTemplateCellForRow(21));
+      setWorksheetCell(worksheet, `${colLetter}21`, 'n', workingCapitalChange, getTemplateCellForRow(21));
       setWorksheetCell(worksheet, `${colLetter}23`, 'n', pretaxUfcf, getTemplateCellForRow(23));
       setWorksheetCell(worksheet, `${colLetter}24`, 'n', conversion, getTemplateCellForRow(24));
     }
@@ -2039,6 +2360,21 @@ function runReturnsModel() {
     returnsResults.classList.add('visible');
   } catch (error) {
     returnsResults.classList.remove('visible');
+  }
+}
+
+function rerenderFinancialProfileView() {
+  if (!cimExtractionResult || !returnsModelResult) return;
+
+  const snapshot = captureFinancialProfileSnapshot();
+  try {
+    renderFinancialProfile(cimExtractionResult, returnsModelResult);
+    financialProfile.classList.add('visible');
+    setCimError('');
+  } catch (error) {
+    console.error('Financial profile rerender failed:', error);
+    restoreFinancialProfileSnapshot(snapshot);
+    setCimError('Could not update the CAGR view. The last valid view is still shown.');
   }
 }
 
@@ -2388,13 +2724,13 @@ function buildFinancialDisplayPeriods(returnsResult) {
   return [...periods.values()];
 }
 
-function buildModelTableHeaders(periods, assumptions, returnsResult) {
+function buildModelTableHeaders(periods, assumptions, returnsResult, cagrSettings) {
   const historical = periods.filter(period => period.bucket === 'historical');
   const forecast = periods.filter(period => period.bucket === 'forecast');
   const exit = periods.filter(period => period.bucket === 'exit');
   const context = getReturnsDisplayContext(returnsResult);
-  const histLabel = historical.length ? `${historical[0].label}-${historical[historical.length - 1].label}` : 'Hist';
-  const forecastLabel = periods.length > historical.length ? `${historical[historical.length - 1]?.label || ''}-${periods[periods.length - 1].label}` : 'Forecast';
+  const histLabel = cagrSettings?.historical?.label || 'Hist';
+  const forecastLabel = cagrSettings?.forecast?.label || 'Forecast';
 
   modelTableHead.innerHTML = `
     <tr>
@@ -2477,13 +2813,13 @@ function createSectionHeader(sectionKey, label, periods) {
   `;
 }
 
-function buildModelTableHeaders(periods, assumptions, returnsResult) {
+function buildModelTableHeaders(periods, assumptions, returnsResult, cagrSettings) {
   const historical = periods.filter(period => period.bucket === 'historical');
   const forecast = periods.filter(period => period.bucket === 'forecast');
   const exit = periods.filter(period => period.bucket === 'exit');
   const context = getReturnsDisplayContext(returnsResult);
-  const histLabel = historical.length ? `${historical[0].label}-${historical[historical.length - 1].label}` : 'Hist';
-  const forecastLabel = periods.length > historical.length ? `${historical[historical.length - 1]?.label || ''}-${periods[periods.length - 1].label}` : 'Forecast';
+  const histLabel = cagrSettings?.historical?.label || 'Hist';
+  const forecastLabel = cagrSettings?.forecast?.label || 'Forecast';
 
   modelTableHead.innerHTML = `
     <tr>
@@ -2491,8 +2827,18 @@ function buildModelTableHeaders(periods, assumptions, returnsResult) {
       ${historical.length ? `<th colspan="${historical.length}">Historical</th>` : ''}
       ${forecast.length ? `<th colspan="${forecast.length}">Forecast</th>` : ''}
       ${exit.length ? `<th colspan="${exit.length}" class="exit-col">Exit</th>` : ''}
-      <th class="cagr-col" rowspan="2">Hist CAGR<br><span>${escapeHtml(histLabel)}</span></th>
-      <th class="cagr-col" rowspan="2">Frcst CAGR<br><span>${escapeHtml(forecastLabel)}</span></th>
+      <th class="cagr-col" rowspan="2">
+        <button type="button" class="cagr-header-trigger" data-cagr-popup-trigger="historical">
+          <span>Hist CAGR</span>
+          <span>${escapeHtml(histLabel)}</span>
+        </button>
+      </th>
+      <th class="cagr-col" rowspan="2">
+        <button type="button" class="cagr-header-trigger" data-cagr-popup-trigger="forecast">
+          <span>Frcst CAGR</span>
+          <span>${escapeHtml(forecastLabel)}</span>
+        </button>
+      </th>
     </tr>
     <tr>
       ${periods.map(period => {
@@ -2513,11 +2859,13 @@ function sectionColspan(periods) {
   return periods.length + 3;
 }
 
-function createAbsoluteRow(label, periods, values, currency, historicalPeriods, forwardPeriods) {
-  const histValues = historicalPeriods.map(period => values[period.label]).filter(value => Number.isFinite(value));
-  const forwardValues = forwardPeriods.map(period => values[period.label]).filter(value => Number.isFinite(value));
-  const histCagr = histValues.length >= 2 ? calculateCagr(histValues[0], histValues[histValues.length - 1], histValues.length - 1) : null;
-  const forecastCagr = histValues.length && forwardValues.length ? calculateCagr(histValues[histValues.length - 1], forwardValues[forwardValues.length - 1], forwardValues.length) : null;
+function createAbsoluteRow(label, periods, values, currency, cagrSettings) {
+  const histCagr = calculateCagrFromRange(
+    values,
+    periods.filter(period => period.bucket === 'historical'),
+    cagrSettings?.historical
+  );
+  const forecastCagr = calculateCagrFromRange(values, periods, cagrSettings?.forecast);
 
   return `
     <tr>
@@ -2546,11 +2894,13 @@ function renderFinancialProfile(cimResult, returnsResult) {
   const forwardPeriods = periods.filter(period => period.bucket !== 'historical');
   const currency = cimResult?.structured?.currency || returnsResult?.normalizedProfile?.currency || '$';
   const assumptions = collectReturnsAssumptions();
+  populateCagrRangeInputs(periods);
+  const cagrSettings = getCagrSettings(periods);
   const revenueValues = Object.fromEntries(periods.map(period => [period.label, period.revenue]));
   const grossProfitValues = Object.fromEntries(periods.map(period => [period.label, period.grossProfit]));
   const ebitdaValues = Object.fromEntries(periods.map(period => [period.label, period.ebitda]));
 
-  buildModelTableHeaders(periods, assumptions, returnsResult);
+  buildModelTableHeaders(periods, assumptions, returnsResult, cagrSettings);
   renderMiniCharts(cimResult, returnsResult, periods, { revenueValues, grossProfitValues, ebitdaValues });
   const sgnaValues = Object.fromEntries(periods.map(period => [
     period.label,
@@ -2563,15 +2913,7 @@ function renderFinancialProfile(cimResult, returnsResult) {
   const capexValues = Object.fromEntries(periods.map(period => [period.label, period.capex]));
   const pretaxValues = Object.fromEntries(periods.map(period => [period.label, period.pretaxUfcf]));
   const workingCapitalValues = Object.fromEntries(periods.map(period => {
-    const pretax = pretaxValues[period.label];
-    const ebitda = ebitdaValues[period.label];
-    const capex = capexValues[period.label];
-    return [
-      period.label,
-      Number.isFinite(pretax) && Number.isFinite(ebitda) && Number.isFinite(capex)
-        ? pretax - ebitda + capex
-        : null,
-    ];
+    return [period.label, getPeriodWorkingCapitalChange(period)];
   }));
   const taxValues = Object.fromEntries(periods.map(period => [period.label, period.tax]));
   const interestValues = Object.fromEntries(periods.map(period => [period.label, period.interest]));
@@ -2621,31 +2963,31 @@ function renderFinancialProfile(cimResult, returnsResult) {
   const rows = [];
   rows.push(createSectionHeader('revenue', 'Revenue', periods));
   if (financialProfileSections.revenue) {
-    rows.push(createAbsoluteRow('Total Revenue', periods, revenueValues, currency, historicalPeriods, forwardPeriods));
+    rows.push(createAbsoluteRow('Total Revenue', periods, revenueValues, currency, cagrSettings));
     rows.push(createRateRow('% Y/Y growth', periods, revenueGrowthRates, historicalPeriods, forwardPeriods));
   }
 
   rows.push(createSectionHeader('ebitda', 'EBITDA', periods));
   if (financialProfileSections.ebitda) {
-    rows.push(createAbsoluteRow('Gross Profit', periods, grossProfitValues, currency, historicalPeriods, forwardPeriods));
+    rows.push(createAbsoluteRow('Gross Profit', periods, grossProfitValues, currency, cagrSettings));
     rows.push(createRateRow('% revenue', periods, grossMarginRates, historicalPeriods, forwardPeriods));
-    rows.push(createAbsoluteRow('SG&A Expenses', periods, sgnaValues, currency, historicalPeriods, forwardPeriods));
+    rows.push(createAbsoluteRow('SG&A Expenses', periods, sgnaValues, currency, cagrSettings));
     rows.push(createRateRow('% revenue', periods, sgnaRates, historicalPeriods, forwardPeriods));
-    rows.push(createAbsoluteRow('Total EBITDA', periods, ebitdaValues, currency, historicalPeriods, forwardPeriods));
+    rows.push(createAbsoluteRow('Total EBITDA', periods, ebitdaValues, currency, cagrSettings));
     rows.push(createRateRow('% margin', periods, ebitdaMarginRates, historicalPeriods, forwardPeriods));
   }
 
   rows.push(createSectionHeader('capex', 'Capex & FCF', periods));
   if (financialProfileSections.capex) {
-    rows.push(createAbsoluteRow('Capex', periods, capexValues, currency, historicalPeriods, forwardPeriods));
+    rows.push(createAbsoluteRow('Capex', periods, capexValues, currency, cagrSettings));
     rows.push(createRateRow('% revenue', periods, capexRates, historicalPeriods, forwardPeriods));
-    rows.push(createAbsoluteRow('Δ Working Cap.', periods, workingCapitalValues, currency, historicalPeriods, forwardPeriods));
-    rows.push(createAbsoluteRow('Pre-tax uFCF', periods, pretaxValues, currency, historicalPeriods, forwardPeriods));
+    rows.push(createAbsoluteRow('Δ Working Cap.', periods, workingCapitalValues, currency, cagrSettings));
+    rows.push(createAbsoluteRow('Pre-tax uFCF', periods, pretaxValues, currency, cagrSettings));
     rows.push(createRateRow('% EBITDA', periods, pretaxRates, historicalPeriods, forwardPeriods));
-    rows.push(createAbsoluteRow('Tax', periods, taxValues, currency, historicalPeriods, forwardPeriods));
-    rows.push(createAbsoluteRow('Interest', periods, interestValues, currency, historicalPeriods, forwardPeriods));
-    rows.push(createAbsoluteRow('Post-tax Cash Flow', periods, postTaxValues, currency, historicalPeriods, forwardPeriods));
-    rows.push(createAbsoluteRow('Cash EOP', periods, cashValues, currency, historicalPeriods, forwardPeriods));
+    rows.push(createAbsoluteRow('Tax', periods, taxValues, currency, cagrSettings));
+    rows.push(createAbsoluteRow('Interest', periods, interestValues, currency, cagrSettings));
+    rows.push(createAbsoluteRow('Post-tax Cash Flow', periods, postTaxValues, currency, cagrSettings));
+    rows.push(createAbsoluteRow('Cash EOP', periods, cashValues, currency, cagrSettings));
   }
 
   modelTableBody.innerHTML = rows.join('');
@@ -3160,6 +3502,42 @@ returnsRunBtn.addEventListener('click', () => {
 
 downloadExcelBtn.addEventListener('click', () => {
   downloadFinancialExcel();
+});
+
+[histCagrStartInput, histCagrEndInput, forecastCagrStartInput, forecastCagrEndInput].forEach(input => {
+  input?.addEventListener('change', () => {
+    rerenderFinancialProfileView();
+  });
+});
+
+modelTableHead.addEventListener('click', event => {
+  const trigger = event.target.closest('[data-cagr-popup-trigger]');
+  if (!trigger) return;
+  const type = trigger.getAttribute('data-cagr-popup-trigger');
+  if (!type) return;
+
+  if (activeCagrPopupType === type && cagrPopup?.classList.contains('visible')) {
+    closeCagrPopup();
+    return;
+  }
+
+  openCagrPopup(type);
+});
+
+cagrPopupCloseBtn?.addEventListener('click', () => {
+  closeCagrPopup();
+});
+
+cagrPopup?.addEventListener('click', event => {
+  if (event.target === cagrPopup) {
+    closeCagrPopup();
+  }
+});
+
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && cagrPopup?.classList.contains('visible')) {
+    closeCagrPopup();
+  }
 });
 
 modelTableBody.addEventListener('click', event => {
