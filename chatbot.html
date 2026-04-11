@@ -2076,10 +2076,22 @@ async function downloadFinancialExcel() {
   }
 
   try {
-    const response = await fetch('/api/transfer-template', { cache: 'no-store' });
-    if (!response.ok) {
-      const payload = await response.json().catch(() => ({}));
-      throw new Error(payload.error || 'Could not load transfer-template.xlsm.');
+    const templateCandidates = [
+      '/transfer-template.xlsm',
+      '/api/transfer-template',
+    ];
+    let response = null;
+
+    for (const candidate of templateCandidates) {
+      const nextResponse = await fetch(candidate, { cache: 'no-store' });
+      if (nextResponse.ok) {
+        response = nextResponse;
+        break;
+      }
+    }
+
+    if (!response) {
+      throw new Error('Could not load transfer-template.xlsm.');
     }
 
     const workbook = XLSX.read(await response.arrayBuffer(), {
