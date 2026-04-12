@@ -24,6 +24,8 @@
       --text-muted:    #6b7280;
       --accent:        #d97757;   /* App accent */
       --accent-hover:  #c4683f;
+      --bridge-positive: #167f78;
+      --bridge-negative: #d40000;
       --user-bubble:   #f3f3f1;
       --user-text:     #1a1a1a;
       --code-bg:       #f6f6f4;
@@ -40,6 +42,8 @@
       --border:        #383838;
       --text:          #ececec;
       --text-muted:    #9ca3af;
+      --bridge-positive: #2a9a92;
+      --bridge-negative: #ff5a5a;
       --user-bubble:   #303030;
       --user-text:     #ececec;
       --code-bg:       #1e1e1e;
@@ -431,6 +435,63 @@
       display: grid;
     }
 
+    .modelling-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .modelling-section-header {
+      border-bottom: 1px solid var(--border);
+      background: var(--surface-hover);
+    }
+
+    .modelling-section-toggle {
+      all: unset;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      width: 100%;
+      padding: 12px 16px;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .modelling-section-toggle span:last-child {
+      font-size: 14px;
+      letter-spacing: 0;
+      transform: translateY(-1px);
+    }
+
+    .modelling-section-body {
+      display: grid;
+      gap: 14px;
+      padding: 16px;
+    }
+
+    .modelling-section.collapsed .modelling-section-body {
+      display: none;
+    }
+
+    .modelling-section-two-col {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      align-items: stretch;
+      gap: 20px;
+    }
+
+    .modelling-section-col {
+      display: grid;
+      gap: 14px;
+      min-width: 0;
+      height: 100%;
+    }
+
     .assumptions-bar {
       display: grid;
       gap: 10px;
@@ -792,41 +853,50 @@
 
     .returns-strip {
       display: grid;
-      grid-template-columns: repeat(6, minmax(120px, 1fr));
-      gap: 10px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0;
+      margin-top: 0;
+      border-top: 1px solid var(--border);
     }
 
     .returns-strip .returns-metric {
-      background: #faf8f4;
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 10px 12px;
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+      padding: 14px 0;
+      text-align: center;
+    }
+
+    .returns-strip .returns-metric:first-child {
+      border-right: 1px solid var(--border);
     }
 
     .returns-strip .returns-metric span {
       display: block;
-      font-size: 11px;
+      font-size: 10px;
       color: var(--text-muted);
       text-transform: uppercase;
-      letter-spacing: .06em;
+      letter-spacing: .1em;
       margin-bottom: 4px;
     }
 
     .returns-strip .returns-metric strong {
-      font-size: 15px;
+      font-size: 22px;
     }
 
     .equity-bridge {
       display: none;
       border: 1px solid var(--border);
-      border-radius: 18px;
+      border-radius: var(--radius);
       background: var(--surface);
-      padding: 14px 16px 16px;
+      padding: 20px 24px;
     }
 
     .equity-bridge.visible {
-      display: grid;
+      display: flex;
+      flex-direction: column;
       gap: 12px;
+      height: 100%;
     }
 
     .equity-bridge-header {
@@ -837,12 +907,12 @@
     }
 
     .equity-bridge-header strong {
-      font-size: 15px;
+      font-size: 14px;
       color: var(--text);
     }
 
     .equity-bridge-header span {
-      font-size: 11px;
+      font-size: 10px;
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: .06em;
@@ -853,6 +923,89 @@
       height: 290px;
       display: block;
       overflow: visible;
+    }
+
+    .sources-uses-returns-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .sources-uses-card {
+      display: none;
+      flex: 1 1 auto;
+    }
+
+    .sources-uses-card.visible {
+      display: block;
+    }
+
+    #sources-uses-section .modelling-section-body {
+      align-items: stretch;
+    }
+
+    #sources-uses-section .modelling-section-col {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .sources-uses-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    .sources-uses-table th,
+    .sources-uses-table td {
+      padding: 10px 14px;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      font-size: 13px;
+    }
+
+    .sources-uses-table th {
+      text-align: left;
+      font-weight: 500;
+    }
+
+    .sources-uses-table td {
+      text-align: right;
+    }
+
+    .sources-uses-table .sources-uses-group-header th {
+      color: var(--text-muted);
+      font-size: 11px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      font-weight: 700;
+      background: var(--surface);
+    }
+
+    .sources-uses-table .sources-uses-item-row:nth-child(even) {
+      background: var(--surface-hover);
+    }
+
+    .sources-uses-table .sources-uses-item-row:nth-child(odd) {
+      background: var(--surface);
+    }
+
+    .sources-uses-table .sources-uses-amount {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .sources-uses-table .sources-uses-total-row th,
+    .sources-uses-table .sources-uses-total-row td {
+      border-top: 2px solid var(--text);
+      font-weight: 700;
+      font-size: 14px;
+      background: var(--surface);
     }
 
     .header-chip {
@@ -1243,6 +1396,17 @@
       .mini-charts { grid-template-columns: 1fr; }
       .returns-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
+
+    @media (max-width: 768px) {
+      .modelling-section-two-col {
+        grid-template-columns: 1fr;
+      }
+
+      .sources-uses-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1396,77 +1560,110 @@
           </div>
 
           <div id="financial-profile" class="financial-profile">
-            <div class="assumptions-bar">
-              <div class="assumptions-card">
-                <div class="assumptions-card-header">
-                  <span class="assumptions-card-title">Core Modelling Assumptions</span>
-                </div>
-                <div class="returns-field">
-            <label for="assumption-entry-date">Entry Date</label>
-            <input id="assumption-entry-date" type="date" />
-                </div>
-                <div class="returns-field">
-            <label for="assumption-fiscal-year-end-month">Fiscal Year-End Month</label>
-            <select id="assumption-fiscal-year-end-month">
-              <option value="1">January</option>
-              <option value="2">February</option>
-              <option value="3">March</option>
-              <option value="4">April</option>
-              <option value="5">May</option>
-              <option value="6">June</option>
-              <option value="7">July</option>
-              <option value="8">August</option>
-              <option value="9">September</option>
-              <option value="10">October</option>
-              <option value="11">November</option>
-              <option value="12">December</option>
-            </select>
-                </div>
-                <div class="returns-field">
-            <label for="assumption-entry-multiple">Entry Multiple</label>
-            <input id="assumption-entry-multiple" type="number" step="0.1" />
-                </div>
-                <div class="returns-field">
-            <label for="assumption-exit-multiple">Exit Multiple</label>
-            <input id="assumption-exit-multiple" type="number" step="0.1" />
-                </div>
-                <div class="returns-field">
-            <label for="assumption-leverage">Leverage</label>
-            <input id="assumption-leverage" type="number" step="0.1" />
-                </div>
-                <div class="returns-field">
-            <label for="assumption-minimum-cash">Minimum Cash</label>
-            <input id="assumption-minimum-cash" type="number" step="0.01" placeholder="Optional override" />
-                </div>
-                <div class="returns-field">
-            <label for="assumption-hold-years">Hold Years</label>
-            <input id="assumption-hold-years" type="number" step="1" min="1" />
-                </div>
-                <div class="returns-field">
-            <label for="assumption-pretax-ufcf-conversion">Pre-tax uFCF Conversion %</label>
-            <input id="assumption-pretax-ufcf-conversion" type="number" step="0.01" />
-                </div>
-                <div class="returns-field">
-            <label for="assumption-mep">Management Equity Plan %</label>
-            <input id="assumption-mep" type="number" step="0.01" />
+            <div class="modelling-section" id="assumptions-section">
+              <div class="modelling-section-header">
+                <button type="button" class="modelling-section-toggle" data-modelling-section-toggle="assumptions-section" aria-expanded="true">
+                  <span>Core Modelling Assumptions</span>
+                  <span>▾</span>
+                </button>
+              </div>
+              <div class="modelling-section-body">
+                <div class="assumptions-bar">
+                  <div class="assumptions-card">
+                    <div class="returns-field">
+              <label for="assumption-entry-date">Entry Date</label>
+              <input id="assumption-entry-date" type="date" />
+                    </div>
+                    <div class="returns-field">
+              <label for="assumption-fiscal-year-end-month">Fiscal Year-End Month</label>
+              <select id="assumption-fiscal-year-end-month">
+                <option value="1">January</option>
+                <option value="2">February</option>
+                <option value="3">March</option>
+                <option value="4">April</option>
+                <option value="5">May</option>
+                <option value="6">June</option>
+                <option value="7">July</option>
+                <option value="8">August</option>
+                <option value="9">September</option>
+                <option value="10">October</option>
+                <option value="11">November</option>
+                <option value="12">December</option>
+              </select>
+                    </div>
+                    <div class="returns-field">
+              <label for="assumption-entry-multiple">Entry Multiple</label>
+              <input id="assumption-entry-multiple" type="number" step="0.1" />
+                    </div>
+                    <div class="returns-field">
+              <label for="assumption-exit-multiple">Exit Multiple</label>
+              <input id="assumption-exit-multiple" type="number" step="0.1" />
+                    </div>
+                    <div class="returns-field">
+              <label for="assumption-leverage">Leverage</label>
+              <input id="assumption-leverage" type="number" step="0.1" />
+                    </div>
+                    <div class="returns-field">
+              <label for="assumption-minimum-cash">Minimum Cash</label>
+              <input id="assumption-minimum-cash" type="number" step="0.01" placeholder="Optional override" />
+                    </div>
+                    <div class="returns-field">
+              <label for="assumption-hold-years">Hold Years</label>
+              <input id="assumption-hold-years" type="number" step="1" min="1" />
+                    </div>
+                    <div class="returns-field">
+              <label for="assumption-pretax-ufcf-conversion">Pre-tax uFCF Conversion %</label>
+              <input id="assumption-pretax-ufcf-conversion" type="number" step="0.01" />
+                    </div>
+                    <div class="returns-field">
+              <label for="assumption-mep">Management Equity Plan %</label>
+              <input id="assumption-mep" type="number" step="0.01" />
+                    </div>
+
+                    <button class="secondary-btn" id="returns-run-btn" type="button">Run returns model</button>
+                    <button class="secondary-btn" id="download-excel-btn" type="button" disabled>Download Excel</button>
+                  </div>
                 </div>
 
-                <button class="secondary-btn" id="returns-run-btn" type="button">Run returns model</button>
-                <button class="secondary-btn" id="download-excel-btn" type="button" disabled>Download Excel</button>
+                <div id="mini-charts" class="mini-charts"></div>
               </div>
             </div>
 
-            <div id="mini-charts" class="mini-charts"></div>
+            <div class="modelling-section" id="sources-uses-section">
+              <div class="modelling-section-header">
+                <button type="button" class="modelling-section-toggle" data-modelling-section-toggle="sources-uses-section" aria-expanded="true">
+                  <span>Sources &amp; Uses and Returns</span>
+                  <span>▾</span>
+                </button>
+              </div>
+              <div class="modelling-section-body modelling-section-two-col">
+                <div class="modelling-section-col">
+                  <div class="sources-uses-returns-card">
+                    <div id="sources-uses" class="sources-uses-card"></div>
+                    <div id="returns-strip" class="returns-strip"></div>
+                  </div>
+                </div>
+                <div class="modelling-section-col">
+                  <div id="equity-bridge" class="equity-bridge"></div>
+                </div>
+              </div>
+            </div>
 
-            <div id="returns-strip" class="returns-strip"></div>
-
-            <div id="equity-bridge" class="equity-bridge"></div>
-
-            <div class="model-table-wrap">
-              <table id="model-table" class="model-table">
-                <thead id="model-table-head"></thead>
-                <tbody id="model-table-body"></tbody>
-              </table>
+            <div class="modelling-section collapsed" id="financial-profile-section">
+              <div class="modelling-section-header">
+                <button type="button" class="modelling-section-toggle" data-modelling-section-toggle="financial-profile-section" aria-expanded="false">
+                  <span>Detailed Financial Profile</span>
+                  <span>▾</span>
+                </button>
+              </div>
+              <div class="modelling-section-body">
+                <div class="model-table-wrap">
+                  <table id="model-table" class="model-table">
+                    <thead id="model-table-head"></thead>
+                    <tbody id="model-table-body"></tbody>
+                  </table>
+                </div>
+              </div>
             </div>
 
             <div id="cagr-popup" class="cagr-popup" aria-hidden="true">
@@ -1564,6 +1761,7 @@ const financialProfile = $('financial-profile');
 const returnsRunBtn = $('returns-run-btn');
 const downloadExcelBtn = $('download-excel-btn');
 const miniCharts = $('mini-charts');
+const sourcesUses = $('sources-uses');
 const equityBridge = $('equity-bridge');
 const modelTableHead = $('model-table-head');
 const modelTableBody = $('model-table-body');
@@ -1742,7 +1940,8 @@ renderer.code = function(code, language) {
 marked.use({ renderer });
 
 function escapeHtml(str) {
-  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const text = str === null || str === undefined ? '' : String(str);
+  return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 // Copy button handler (global, called from inline onclick)
@@ -1772,6 +1971,8 @@ function resetReturnsResults() {
   returnsModelResult = null;
   financialProfile.classList.remove('visible');
   miniCharts.innerHTML = '';
+  sourcesUses.innerHTML = '';
+  sourcesUses.classList.remove('visible');
   equityBridge.innerHTML = '';
   equityBridge.classList.remove('visible');
   modelTableHead.innerHTML = '';
@@ -1791,6 +1992,8 @@ function captureFinancialProfileSnapshot() {
   return {
     visible: financialProfile.classList.contains('visible'),
     miniChartsHtml: miniCharts.innerHTML,
+    sourcesUsesHtml: sourcesUses.innerHTML,
+    sourcesUsesVisible: sourcesUses.classList.contains('visible'),
     equityBridgeHtml: equityBridge.innerHTML,
     equityBridgeVisible: equityBridge.classList.contains('visible'),
     modelTableHeadHtml: modelTableHead.innerHTML,
@@ -1802,6 +2005,8 @@ function captureFinancialProfileSnapshot() {
 function restoreFinancialProfileSnapshot(snapshot) {
   if (!snapshot) return;
   miniCharts.innerHTML = snapshot.miniChartsHtml || '';
+  sourcesUses.innerHTML = snapshot.sourcesUsesHtml || '';
+  sourcesUses.classList.toggle('visible', Boolean(snapshot.sourcesUsesVisible));
   equityBridge.innerHTML = snapshot.equityBridgeHtml || '';
   equityBridge.classList.toggle('visible', Boolean(snapshot.equityBridgeVisible));
   modelTableHead.innerHTML = snapshot.modelTableHeadHtml || '';
@@ -2157,6 +2362,10 @@ function setWorksheetCell(ws, address, type, value, templateCell = null) {
   ws[address] = nextCell;
 }
 
+function getAddressTemplateCell(ws, address) {
+  return cloneWorksheetCell(ws[address]);
+}
+
 function getPeriodWorkingCapitalChange(period) {
   if (!period) return null;
 
@@ -2225,10 +2434,10 @@ async function downloadFinancialExcel() {
       }
     }
 
-    setWorksheetCell(worksheet, 'B2', 's', 'x');
-    setWorksheetCell(worksheet, 'C2', 's', 'Transfer Sheet');
-    setWorksheetCell(worksheet, 'B27', 's', 'x');
-    setWorksheetCell(worksheet, 'C27', 's', 'End');
+    setWorksheetCell(worksheet, 'B2', 's', 'x', getAddressTemplateCell(worksheet, 'B2'));
+    setWorksheetCell(worksheet, 'C2', 's', 'Transfer Sheet', getAddressTemplateCell(worksheet, 'C2'));
+    setWorksheetCell(worksheet, 'B27', 's', 'x', getAddressTemplateCell(worksheet, 'B27'));
+    setWorksheetCell(worksheet, 'C27', 's', 'End', getAddressTemplateCell(worksheet, 'C27'));
 
     const rowLabels = {
       D5: 'Revenue',
@@ -2247,7 +2456,7 @@ async function downloadFinancialExcel() {
     };
 
     for (const [cell, label] of Object.entries(rowLabels)) {
-      setWorksheetCell(worksheet, cell, 's', label);
+      setWorksheetCell(worksheet, cell, 's', label, getAddressTemplateCell(worksheet, cell));
     }
 
     for (let index = 0; index < periods.length; index += 1) {
@@ -2342,6 +2551,16 @@ function formatReturnsMoney(value, result) {
   const prefix = context.currency ? `${context.currency} ` : '';
   const suffix = getReturnsUnitSuffix(context.units);
   return `${prefix}${scaledValue.toLocaleString(undefined, { maximumFractionDigits: 0, minimumFractionDigits: 0 })}${suffix}`;
+}
+
+function formatSourcesUsesMoney(value, result) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return '-';
+  const numeric = Number(value);
+  if (numeric === 0) return '-';
+  const context = getReturnsDisplayContext(result);
+  const currency = context.currency || '$';
+  const scaledValue = scaleReturnValue(numeric, result);
+  return formatModelMoney(scaledValue, currency);
 }
 
 function formatReturnsPercent(value) {
@@ -2812,13 +3031,14 @@ function renderMiniChartCard(title, subtitle, bars, currency, labels, chartPerio
   const chartTop = topPadding;
   const barGeometry = {};
   const valueLabelGeometry = {};
+  const miniChartBarFill = '#8b887f';
 
   const rects = bars.map((value, index) => {
     const barHeight = (Math.abs(value || 0) / maxBar) * (drawableHeight - 10);
     const x = padding + (index * step) + 6;
     const y = chartBottom - barHeight;
     barGeometry[labels[index]] = { x, y, width: barWidth, height: barHeight };
-    return `<rect x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" rx="4" fill="#ddd8ce"></rect>`;
+    return `<rect x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" rx="4" fill="${miniChartBarFill}"></rect>`;
   }).join('');
 
   const valueLabels = bars.map((value, index) => {
@@ -2869,8 +3089,8 @@ function renderMiniCharts(cimResult, returnsResult, periods, seriesOverrides = {
   const grossProfitValues = periods.map(period => grossProfitValuesByLabel[period.label]);
   const ebitdaValues = periods.map(period => ebitdaValuesByLabel[period.label]);
   const historicalPeriods = periods.filter(period => period.bucket === 'historical');
-  const historicalColor = '#7e8da6';
-  const forecastColor = '#c77b30';
+  const historicalColor = '#111111';
+  const forecastColor = '#111111';
   const buildChartAnnotations = (idPrefix, valuesByLabel, { allowHistorical = true } = {}) => {
     const historicalValue = calculateCagrFromRange(valuesByLabel, historicalPeriods, cagrSettings?.historical);
     const forecastValue = calculateCagrFromRange(valuesByLabel, periods, cagrSettings?.forecast);
@@ -2913,7 +3133,97 @@ function getBridgeLabelLines(label) {
   return [words.slice(0, Math.ceil(words.length / 2)).join(' '), words.slice(Math.ceil(words.length / 2)).join(' ')];
 }
 
+function buildBridgeBarPath(x, y, width, height, radius, isPositive) {
+  const safeWidth = Math.max(width, 0);
+  const safeHeight = Math.max(height, 0);
+  const r = Math.max(0, Math.min(radius, safeWidth / 2, safeHeight / 2));
+  const right = x + safeWidth;
+  const bottom = y + safeHeight;
+
+  if (safeWidth === 0 || safeHeight === 0) {
+    return `M ${x} ${y} H ${right} V ${bottom} H ${x} Z`;
+  }
+
+  if (isPositive) {
+    return [
+      `M ${x} ${bottom}`,
+      `L ${x} ${y + r}`,
+      `Q ${x} ${y} ${x + r} ${y}`,
+      `L ${right - r} ${y}`,
+      `Q ${right} ${y} ${right} ${y + r}`,
+      `L ${right} ${bottom}`,
+      'Z',
+    ].join(' ');
+  }
+
+  return [
+    `M ${x} ${y}`,
+    `L ${x} ${bottom - r}`,
+    `Q ${x} ${bottom} ${x + r} ${bottom}`,
+    `L ${right - r} ${bottom}`,
+    `Q ${right} ${bottom} ${right} ${bottom - r}`,
+    `L ${right} ${y}`,
+    'Z',
+  ].join(' ');
+}
+
+function renderSourcesAndUses(result) {
+  if (!sourcesUses) return;
+  const entry = result?.entry;
+  if (!entry) {
+    sourcesUses.innerHTML = '';
+    sourcesUses.classList.remove('visible');
+    return;
+  }
+
+  const totalSources = (entry.pfEquity || 0) + (entry.debt || 0);
+  const totalUses = (entry.entryEv || 0) + (entry.financingFees || 0) + (entry.advisoryFees || 0) + (entry.minimumCash || 0);
+  const sponsorEquity = escapeHtml(formatSourcesUsesMoney(entry.pfEquity, result));
+  const debt = escapeHtml(formatSourcesUsesMoney(entry.debt, result));
+  const enterpriseValue = escapeHtml(formatSourcesUsesMoney(entry.entryEv, result));
+  const financingFees = escapeHtml(formatSourcesUsesMoney(entry.financingFees, result));
+  const advisoryFees = escapeHtml(formatSourcesUsesMoney(entry.advisoryFees, result));
+  const minimumCash = escapeHtml(formatSourcesUsesMoney(entry.minimumCash, result));
+  const totalSourcesLabel = escapeHtml(formatSourcesUsesMoney(totalSources, result));
+  const totalUsesLabel = escapeHtml(formatSourcesUsesMoney(totalUses, result));
+  const itemRows = [
+    ['Sponsor Equity', sponsorEquity, 'EV', enterpriseValue],
+    ['Debt', debt, 'Financing Fees', financingFees],
+    ['', '', 'Advisory Fees', advisoryFees],
+    ['', '', 'Min Cash', minimumCash],
+  ];
+
+  sourcesUses.innerHTML = `
+    <table class="sources-uses-table">
+      <thead>
+        <tr class="sources-uses-group-header">
+          <th colspan="2">Sources</th>
+          <th colspan="2">Uses</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${itemRows.map(([sourceLabel, sourceValue, useLabel, useValue]) => `
+          <tr class="sources-uses-item-row">
+            <th>${escapeHtml(sourceLabel || '')}</th>
+            <td class="sources-uses-amount">${escapeHtml(sourceValue || '')}</td>
+            <th>${escapeHtml(useLabel || '')}</th>
+            <td class="sources-uses-amount">${escapeHtml(useValue || '')}</td>
+          </tr>
+        `).join('')}
+        <tr class="sources-uses-total-row">
+          <th>Total</th>
+          <td class="sources-uses-amount">${totalSourcesLabel}</td>
+          <th>Total</th>
+          <td class="sources-uses-amount">${totalUsesLabel}</td>
+        </tr>
+      </tbody>
+    </table>
+  `;
+  sourcesUses.classList.add('visible');
+}
+
 function renderEquityBridge(result) {
+  if (!equityBridge) return;
   const bridge = result?.valueCreationBridge;
   const steps = Array.isArray(bridge?.steps) ? bridge.steps : [];
   const currency = result?.normalizedProfile?.currency || '$';
@@ -2941,8 +3251,10 @@ function renderEquityBridge(result) {
   const baselineY = paddingTop + ((maxValue - 0) / valueRange) * plotHeight;
   const scaleY = (value) => paddingTop + ((maxValue - value) / valueRange) * plotHeight;
   const bars = [];
+  const connectors = [];
   const valueLabels = [];
   const axisLabels = [];
+  const radius = 3;
 
   for (let index = 0; index < steps.length; index += 1) {
     const step = steps[index];
@@ -2954,24 +3266,31 @@ function renderEquityBridge(result) {
     const rectY = Math.min(y1, y2);
     const rectHeight = Math.max(Math.abs(y2 - y1), 2);
     const isTotal = step.type === 'total';
-    const isPositive = Number(step.value) >= 0;
+    const isPositive = isTotal ? endValue >= 0 : Number(step.value) >= 0;
     const fill = isTotal
-      ? '#111111'
+      ? 'var(--text)'
       : isPositive
-        ? '#16a34a'
-        : '#dc2626';
+        ? 'var(--bridge-positive)'
+        : 'var(--bridge-negative)';
 
-    bars.push(`<rect x="${x}" y="${rectY}" width="${barWidth}" height="${rectHeight}" rx="8" fill="${fill}"></rect>`);
+    bars.push(`<path d="${buildBridgeBarPath(x, rectY, barWidth, rectHeight, radius, isPositive)}" fill="${fill}" style="filter: drop-shadow(0 1px 3px rgba(0,0,0,0.08));"></path>`);
+
+    if (index < steps.length - 1) {
+      const connectorY = scaleY(endValue);
+      connectors.push(
+        `<line x1="${x + barWidth}" y1="${connectorY}" x2="${x + barWidth + stepGap}" y2="${connectorY}" stroke="var(--border)" stroke-width="1" stroke-dasharray="4 3"></line>`
+      );
+    }
 
     const scaledValue = scaleReturnValue(step.value, result);
     const labelY = Number(step.value) >= 0 ? rectY - 8 : rectY + rectHeight + 14;
     valueLabels.push(
-      `<text x="${x + (barWidth / 2)}" y="${labelY}" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">${escapeHtml(formatModelMoney(scaledValue, currency))}</text>`
+      `<text x="${x + (barWidth / 2)}" y="${labelY}" text-anchor="middle" font-size="11" font-weight="600" fill="${fill}" style="font-variant-numeric: tabular-nums;">${escapeHtml(formatModelMoney(scaledValue, currency))}</text>`
     );
 
     const lines = getBridgeLabelLines(step.label);
     axisLabels.push(`
-      <text x="${x + (barWidth / 2)}" y="${height - 30}" text-anchor="middle" font-size="10.5" fill="var(--text-muted)">
+      <text x="${x + (barWidth / 2)}" y="${height - 30}" text-anchor="middle" font-size="10" fill="var(--text-muted)" style="letter-spacing:0.04em;text-transform:uppercase;">
         ${lines.map((line, lineIndex) => `<tspan x="${x + (barWidth / 2)}" dy="${lineIndex === 0 ? 0 : 12}">${escapeHtml(line)}</tspan>`).join('')}
       </text>
     `);
@@ -2980,10 +3299,11 @@ function renderEquityBridge(result) {
   equityBridge.innerHTML = `
     <div class="equity-bridge-header">
       <strong>Equity Bridge</strong>
-      <span>${escapeHtml(currency === 'USD' ? '$' : currency)}${units ? ` in ${units}` : ''}</span>
+      <span>${escapeHtml(currency === 'USD' ? '$' : currency)}${units ? ` in ${String(units).toUpperCase()}` : ''}</span>
     </div>
     <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="Equity Bridge waterfall chart">
       <line x1="${paddingLeft}" y1="${baselineY}" x2="${width - paddingRight}" y2="${baselineY}" stroke="var(--border)" stroke-width="1"></line>
+      ${connectors.join('')}
       ${bars.join('')}
       ${valueLabels.join('')}
       ${axisLabels.join('')}
@@ -3378,10 +3698,6 @@ function renderFinancialProfile(cimResult, returnsResult) {
   modelTableBody.innerHTML = rows.join('');
 
   const summaryItems = [
-    ['Entry EV', formatModelMoney(scaleReturnValue(returnsResult.entry?.entryEv, returnsResult), currency)],
-    ['Sponsor Equity', formatModelMoney(scaleReturnValue(returnsResult.entry?.pfEquity, returnsResult), currency)],
-    ['Exit EV', formatModelMoney(scaleReturnValue(returnsResult.exit?.exitEv, returnsResult), currency)],
-    ['Exit Equity', formatModelMoney(scaleReturnValue(returnsResult.exit?.pfEquityExit, returnsResult), currency)],
     ['MoM', formatModelMultiple(returnsResult.returns?.mom)],
     ['IRR', formatModelPercent(returnsResult.returns?.irr)],
   ];
@@ -3393,7 +3709,67 @@ function renderFinancialProfile(cimResult, returnsResult) {
     </div>
   `).join('');
 
-  renderEquityBridge(returnsResult);
+  try {
+    renderSourcesAndUses(returnsResult);
+  } catch (error) {
+    console.error('Sources & Uses render failed:', error);
+    if (sourcesUses) {
+      const entry = returnsResult?.entry || {};
+      const totalSources = (entry.pfEquity || 0) + (entry.debt || 0);
+      const totalUses = (entry.entryEv || 0) + (entry.financingFees || 0) + (entry.advisoryFees || 0) + (entry.minimumCash || 0);
+      const sponsorEquity = escapeHtml(formatSourcesUsesMoney(entry.pfEquity, returnsResult));
+      const debt = escapeHtml(formatSourcesUsesMoney(entry.debt, returnsResult));
+      const enterpriseValue = escapeHtml(formatSourcesUsesMoney(entry.entryEv, returnsResult));
+      const financingFees = escapeHtml(formatSourcesUsesMoney(entry.financingFees, returnsResult));
+      const advisoryFees = escapeHtml(formatSourcesUsesMoney(entry.advisoryFees, returnsResult));
+      const minimumCash = escapeHtml(formatSourcesUsesMoney(entry.minimumCash, returnsResult));
+      const totalSourcesLabel = escapeHtml(formatSourcesUsesMoney(totalSources, returnsResult));
+      const totalUsesLabel = escapeHtml(formatSourcesUsesMoney(totalUses, returnsResult));
+      const itemRows = [
+        ['Sponsor Equity', sponsorEquity, 'EV', enterpriseValue],
+        ['Debt', debt, 'Financing Fees', financingFees],
+        ['', '', 'Advisory Fees', advisoryFees],
+        ['', '', 'Min Cash', minimumCash],
+      ];
+      sourcesUses.innerHTML = `
+        <table class="sources-uses-table">
+          <thead>
+            <tr class="sources-uses-group-header">
+              <th colspan="2">Sources</th>
+              <th colspan="2">Uses</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemRows.map(([sourceLabel, sourceValue, useLabel, useValue]) => `
+              <tr class="sources-uses-item-row">
+                <th>${escapeHtml(sourceLabel || '')}</th>
+                <td class="sources-uses-amount">${escapeHtml(sourceValue || '')}</td>
+                <th>${escapeHtml(useLabel || '')}</th>
+                <td class="sources-uses-amount">${escapeHtml(useValue || '')}</td>
+              </tr>
+            `).join('')}
+            <tr class="sources-uses-total-row">
+              <th>Total</th>
+              <td class="sources-uses-amount">${totalSourcesLabel}</td>
+              <th>Total</th>
+              <td class="sources-uses-amount">${totalUsesLabel}</td>
+            </tr>
+          </tbody>
+        </table>
+      `;
+      sourcesUses.classList.add('visible');
+    }
+  }
+
+  try {
+    renderEquityBridge(returnsResult);
+  } catch (error) {
+    console.error('Equity bridge render failed:', error);
+    if (equityBridge) {
+      equityBridge.innerHTML = '';
+      equityBridge.classList.remove('visible');
+    }
+  }
 }
 
 function runReturnsModel() {
@@ -3925,6 +4301,29 @@ document.addEventListener('keydown', event => {
   if (event.key === 'Escape' && cagrPopup?.classList.contains('visible')) {
     closeCagrPopup();
   }
+});
+
+function syncModellingSectionToggle(section) {
+  if (!section) return;
+  const toggle = section.querySelector('[data-modelling-section-toggle]');
+  if (!toggle) return;
+  const isExpanded = !section.classList.contains('collapsed');
+  toggle.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
+  const icon = toggle.lastElementChild;
+  if (icon) {
+    icon.textContent = isExpanded ? '▾' : '▸';
+  }
+}
+
+financialProfile?.querySelectorAll('.modelling-section').forEach(syncModellingSectionToggle);
+
+financialProfile?.addEventListener('click', event => {
+  const toggle = event.target.closest('[data-modelling-section-toggle]');
+  if (!toggle) return;
+  const section = toggle.closest('.modelling-section');
+  if (!section) return;
+  section.classList.toggle('collapsed');
+  syncModellingSectionToggle(section);
 });
 
 modelTableBody.addEventListener('click', event => {
