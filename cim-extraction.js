@@ -664,8 +664,8 @@ function extractFirstJsonObject(value) {
   }
 
   const truncatedCandidate = text.slice(start);
-  console.warn('Gemini extraction parse warning: JSON object appears truncated, attempting repair:', truncatedCandidate.slice(0, 2000));
-  return repairTruncatedJsonCandidate(truncatedCandidate);
+  console.warn('Gemini extraction parse warning: JSON object appears truncated, triggering retry:', truncatedCandidate.slice(0, 2000));
+  throw new Error('Gemini extraction response was truncated.');
 }
 
 function parseGeminiJsonResponse(responseText) {
@@ -837,6 +837,26 @@ function deriveSoftWarnings(result, rows) {
   return [...warnings];
 }
 
+function isRetryableExtractionOutputError(error) {
+  const message = String(error?.message || '');
+
+  return [
+    'Gemini extraction response was truncated.',
+    'Gemini returned invalid JSON.',
+    'Gemini returned an empty extraction result.',
+    'Model response was not a JSON object.',
+    'No financial rows could be extracted from the PDF.',
+    'must be a number or null.',
+    'must be an integer or null.',
+    'must be between 0 and 1 or null.',
+    'must be a string or null.',
+    'must be an array.',
+    'must be an array of strings.',
+    'rows must include period_label.',
+    'contains an invalid row.',
+  ].some(fragment => message.includes(fragment));
+}
+
 async function extractCimDataFromPdf(file) {
   const normalizedFile = await loadPdfFromSource(file);
 
@@ -854,35 +874,55 @@ async function extractCimDataFromPdf(file) {
   try {
     uploadedFile = await uploadGeminiFile({ apiKey, file: normalizedFile });
     uploadedFile = await waitForFileActive({ apiKey, fileName: uploadedFile.name });
+    let lastError = null;
 
-    const generationResponse = await requestExtractionWithRetries({ apiKey, uploadedFile });
+    for (let extractionAttempt = 1; extractionAttempt <= 3; extractionAttempt += 1) {
+      try {
+        const generationResponse = await requestExtractionWithRetries({ apiKey, uploadedFile });
 
-    const responseJson = await generationResponse.json();
-    const structuredFromPayload = findStructuredResultInValue(responseJson);
-    const responseText = getResponseText(responseJson);
+        const responseJson = await generationResponse.json();
+        const structuredFromPayload = findStructuredResultInValue(responseJson);
+        const responseText = getResponseText(responseJson);
 
-    if (!structuredFromPayload && !responseText) {
-      console.error('Gemini extraction returned no parseable content:', JSON.stringify(responseJson).slice(0, 2000));
-      throw new Error('Gemini returned an empty extraction result.');
+        if (!structuredFromPayload && !responseText) {
+          console.error('Gemini extraction returned no parseable content:', JSON.stringify(responseJson).slice(0, 2000));
+          throw new Error('Gemini returned an empty extraction result.');
+        }
+
+        const structured = structuredFromPayload || parseGeminiJsonResponse(responseText);
+
+        validateStructuredResult(structured);
+        const rows = normalizeRows(structured);
+        const warnings = deriveSoftWarnings(structured, rows);
+
+        if (!rows.length) {
+          throw new Error('No financial rows could be extracted from the PDF.');
+        }
+
+        return {
+          structured: {
+            ...structured,
+            warnings,
+          },
+          rows,
+        };
+      } catch (error) {
+        lastError = error;
+
+        if (!isRetryableExtractionOutputError(error) || extractionAttempt >= 3) {
+          throw error;
+        }
+
+        const backoffMs = Math.min(1000 * extractionAttempt, 3000);
+        console.warn(
+          `Gemini extraction returned an invalid structured payload on attempt ${extractionAttempt}. Retrying in ${backoffMs}ms.`,
+          error?.message || error
+        );
+        await sleep(backoffMs);
+      }
     }
 
-    const structured = structuredFromPayload || parseGeminiJsonResponse(responseText);
-
-    validateStructuredResult(structured);
-    const rows = normalizeRows(structured);
-    const warnings = deriveSoftWarnings(structured, rows);
-
-    if (!rows.length) {
-      throw new Error('No financial rows could be extracted from the PDF.');
-    }
-
-    return {
-      structured: {
-        ...structured,
-        warnings,
-      },
-      rows,
-    };
+    throw lastError || new Error('Gemini extraction failed.');
   } finally {
     await deleteGeminiFile({ apiKey, fileName: uploadedFile?.name });
   }

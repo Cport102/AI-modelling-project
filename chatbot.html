@@ -668,6 +668,58 @@
       font-weight: 600;
     }
 
+    .model-table .source-group-row th {
+      background: #fbfaf6;
+      padding-top: 12px;
+      padding-bottom: 8px;
+      border-bottom: 0;
+    }
+
+    .model-table .source-group-spacer {
+      background: #fbfaf6;
+    }
+
+    .model-table .source-group-cell {
+      padding-left: 8px;
+      padding-right: 8px;
+    }
+
+    .model-table .source-group-divider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      color: #6f8a8a;
+    }
+
+    .model-table .source-group-divider::before,
+    .model-table .source-group-divider::after {
+      content: '';
+      flex: 1 1 auto;
+      border-top: 1.5px solid currentColor;
+    }
+
+    .model-table .source-group-divider span {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 11.5px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .model-table .source-group-divider span::before,
+    .model-table .source-group-divider span::after {
+      content: '';
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+      flex: 0 0 7px;
+    }
+
     .model-table .left-col {
       text-align: left;
       position: sticky;
@@ -1840,11 +1892,16 @@ function setSelectOptions(select, options, selectedValue) {
 function getDefaultCagrRangeValues(periods) {
   const historical = periods.filter(period => period.bucket === 'historical');
   const all = periods.slice();
+  const lastHistoricalLabel = historical[historical.length - 1]?.label || '';
+  const lastHistoricalIndex = all.findIndex(period => period.label === lastHistoricalLabel);
+  const firstForwardLabel = lastHistoricalIndex >= 0 && all[lastHistoricalIndex + 1]?.label
+    ? all[lastHistoricalIndex + 1].label
+    : all.find(period => period.bucket !== 'historical')?.label || all[0]?.label || '';
 
   return {
     histStart: historical[0]?.label || all[0]?.label || '',
-    histEnd: historical[historical.length - 1]?.label || all[Math.max(all.length - 1, 0)]?.label || '',
-    forecastStart: historical[historical.length - 1]?.label || all[0]?.label || '',
+    histEnd: lastHistoricalLabel || all[Math.max(all.length - 1, 0)]?.label || '',
+    forecastStart: firstForwardLabel,
     forecastEnd: all[all.length - 1]?.label || '',
   };
 }
@@ -2583,11 +2640,119 @@ function extendEbitdaSeries(periods, returnsResult, revenueValues) {
   return ebitdaValues;
 }
 
-function renderMiniChartCard(title, subtitle, bars, currency, labels) {
+function renderMiniChartCagrAnnotation({
+  idPrefix,
+  range,
+  valuesByLabel,
+  chartPeriods,
+  barGeometry,
+  valueLabelGeometry,
+  chartBottom,
+  color,
+  label,
+}) {
+  if (!range?.valid || !Number.isFinite(label)) return '';
+
+  const startIndex = chartPeriods.findIndex(period => period.label === range.startLabel);
+  const endIndex = chartPeriods.findIndex(period => period.label === range.endLabel);
+  if (startIndex === -1 || endIndex === -1 || endIndex <= startIndex) return '';
+
+  const startPeriod = chartPeriods[startIndex];
+  const endPeriod = chartPeriods[endIndex];
+  const startGeometry = startPeriod ? barGeometry[startPeriod.label] : null;
+  const endGeometry = endPeriod ? barGeometry[endPeriod.label] : null;
+  const startValue = startPeriod ? valuesByLabel[startPeriod.label] : null;
+  const endValue = endPeriod ? valuesByLabel[endPeriod.label] : null;
+
+  if (!startGeometry || !endGeometry || !Number.isFinite(startValue) || !Number.isFinite(endValue)) {
+    return '';
+  }
+
+  const spannedLabels = chartPeriods.slice(startIndex, endIndex + 1).map(period => period.label);
+  const startX = startGeometry.x + (startGeometry.width / 2);
+  const endX = endGeometry.x + (endGeometry.width / 2);
+  const annotationTop = 16;
+  const labelOffset = 14;
+  const clearance = 12;
+  const getAnchorY = (periodLabel) => {
+    const labelGeometry = valueLabelGeometry[periodLabel];
+    const barTop = barGeometry[periodLabel]?.y ?? chartBottom;
+    const sourceY = Number.isFinite(labelGeometry?.y) ? labelGeometry.y : barTop;
+    return Math.max(annotationTop, sourceY - labelOffset);
+  };
+  let startY = getAnchorY(startPeriod.label);
+  let endY = getAnchorY(endPeriod.label);
+
+  const getLineYAtX = (x, y1, y2) => {
+    if (endX === startX) return Math.min(y1, y2);
+    const ratio = (x - startX) / (endX - startX);
+    return y1 + ((y2 - y1) * ratio);
+  };
+
+  let requiredLift = 0;
+  for (const periodLabel of spannedLabels) {
+    const labelGeometry = valueLabelGeometry[periodLabel];
+    const geometry = barGeometry[periodLabel];
+    if (!geometry) continue;
+
+    const x = geometry.x + (geometry.width / 2);
+    const labelY = Number.isFinite(labelGeometry?.y) ? labelGeometry.y : geometry.y;
+    const allowedMaxY = labelY - clearance;
+    const lineYAtLabel = getLineYAtX(x, startY, endY);
+    requiredLift = Math.max(requiredLift, lineYAtLabel - allowedMaxY);
+  }
+
+  if (requiredLift > 0) {
+    startY -= requiredLift;
+    endY -= requiredLift;
+  }
+
+  const minEndpointY = Math.min(startY, endY);
+  if (minEndpointY < annotationTop) {
+    const downwardShift = annotationTop - minEndpointY;
+    startY += downwardShift;
+    endY += downwardShift;
+  }
+
+  const midX = (startX + endX) / 2;
+  const midY = (startY + endY) / 2;
+  const pillWidth = 42;
+  const pillHeight = 18;
+  const pillX = midX - (pillWidth / 2);
+  const pillY = Math.max(2, midY - pillHeight - 4);
+  const markerIdStart = `${idPrefix}-start`;
+  const markerIdEnd = `${idPrefix}-end`;
+
+  return `
+    <defs>
+      <marker id="${markerIdStart}" viewBox="0 0 6 6" refX="1.5" refY="3" markerWidth="4" markerHeight="4" orient="auto-start-reverse">
+        <path d="M6,0 L0,3 L6,6" fill="none" stroke="${color}" stroke-width="1.2"></path>
+      </marker>
+      <marker id="${markerIdEnd}" viewBox="0 0 6 6" refX="4.5" refY="3" markerWidth="4" markerHeight="4" orient="auto">
+        <path d="M0,0 L6,3 L0,6" fill="none" stroke="${color}" stroke-width="1.2"></path>
+      </marker>
+    </defs>
+    <line
+      x1="${startX}"
+      y1="${startY}"
+      x2="${endX}"
+      y2="${endY}"
+      fill="none"
+      stroke="${color}"
+      stroke-width="1.5"
+      marker-start="url(#${markerIdStart})"
+      marker-end="url(#${markerIdEnd})"
+    ></line>
+    <rect x="${pillX}" y="${pillY}" width="${pillWidth}" height="${pillHeight}" rx="9" fill="${color}"></rect>
+    <text x="${midX}" y="${pillY + 12}" text-anchor="middle" font-size="12" font-weight="600" fill="#ffffff">${escapeHtml(formatModelPercent(label))}</text>
+  `;
+}
+
+function renderMiniChartCard(title, subtitle, bars, currency, labels, chartPeriods, cagrAnnotations = []) {
   const width = 320;
-  const height = 120;
+  const height = 148;
   const padding = 14;
-  const topPadding = 28;
+  const topPadding = 52;
   const bottomPadding = 24;
   const drawableWidth = width - (padding * 2);
   const drawableHeight = height - topPadding - bottomPadding;
@@ -2596,11 +2761,15 @@ function renderMiniChartCard(title, subtitle, bars, currency, labels) {
 
   const barWidth = Math.max(step - 12, 8);
   const chartBottom = height - bottomPadding;
+  const chartTop = topPadding;
+  const barGeometry = {};
+  const valueLabelGeometry = {};
 
   const rects = bars.map((value, index) => {
     const barHeight = (Math.abs(value || 0) / maxBar) * (drawableHeight - 10);
     const x = padding + (index * step) + 6;
     const y = chartBottom - barHeight;
+    barGeometry[labels[index]] = { x, y, width: barWidth, height: barHeight };
     return `<rect x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" rx="4" fill="#ddd8ce"></rect>`;
   }).join('');
 
@@ -2609,6 +2778,7 @@ function renderMiniChartCard(title, subtitle, bars, currency, labels) {
     const barHeight = (Math.abs(value || 0) / maxBar) * (drawableHeight - 10);
     const x = padding + (index * step) + 6 + (barWidth / 2);
     const y = Math.max(topPadding - 4, chartBottom - barHeight - 4);
+    valueLabelGeometry[labels[index]] = { x, y };
     return `<text x="${x}" y="${y}" text-anchor="middle" font-size="9.5" fill="#6f695f">${escapeHtml(formatChartMoney(value, currency))}</text>`;
   }).join('');
 
@@ -2616,6 +2786,13 @@ function renderMiniChartCard(title, subtitle, bars, currency, labels) {
     const x = padding + (index * step) + (step / 2);
     return `<text x="${x}" y="${height - 6}" text-anchor="middle" font-size="9.5" fill="#8a857c">${escapeHtml(getChartAxisLabel(label))}</text>`;
   }).join('');
+  const annotations = cagrAnnotations.map(annotation => renderMiniChartCagrAnnotation({
+    ...annotation,
+    chartPeriods,
+    barGeometry,
+    valueLabelGeometry,
+    chartBottom,
+  })).join('');
 
   return `
     <div class="mini-chart-card">
@@ -2625,6 +2802,7 @@ function renderMiniChartCard(title, subtitle, bars, currency, labels) {
       </div>
       <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="${escapeHtml(title)} chart">
         <line x1="${padding}" y1="${chartBottom}" x2="${width - padding}" y2="${chartBottom}" stroke="#ebe6db" stroke-width="1"></line>
+        ${annotations}
         ${rects}
         ${valueLabels}
         ${axisLabels}
@@ -2633,17 +2811,50 @@ function renderMiniChartCard(title, subtitle, bars, currency, labels) {
   `;
 }
 
-function renderMiniCharts(cimResult, returnsResult, periods, seriesOverrides = {}) {
+function renderMiniCharts(cimResult, returnsResult, periods, seriesOverrides = {}, cagrSettings = null) {
   const currency = cimResult?.structured?.currency || returnsResult?.normalizedProfile?.currency || '$';
   const labels = periods.map(period => period.label);
-  const revenueValues = periods.map(period => seriesOverrides.revenueValues?.[period.label] ?? getPeriodValue(period, 'revenue', returnsResult));
-  const grossProfitValues = periods.map(period => seriesOverrides.grossProfitValues?.[period.label] ?? getPeriodValue(period, 'gross_profit', returnsResult));
-  const ebitdaValues = periods.map(period => seriesOverrides.ebitdaValues?.[period.label] ?? getPeriodValue(period, 'ebitda', returnsResult));
+  const revenueValuesByLabel = Object.fromEntries(periods.map(period => [period.label, seriesOverrides.revenueValues?.[period.label] ?? getPeriodValue(period, 'revenue', returnsResult)]));
+  const grossProfitValuesByLabel = Object.fromEntries(periods.map(period => [period.label, seriesOverrides.grossProfitValues?.[period.label] ?? getPeriodValue(period, 'gross_profit', returnsResult)]));
+  const ebitdaValuesByLabel = Object.fromEntries(periods.map(period => [period.label, seriesOverrides.ebitdaValues?.[period.label] ?? getPeriodValue(period, 'ebitda', returnsResult)]));
+  const revenueValues = periods.map(period => revenueValuesByLabel[period.label]);
+  const grossProfitValues = periods.map(period => grossProfitValuesByLabel[period.label]);
+  const ebitdaValues = periods.map(period => ebitdaValuesByLabel[period.label]);
+  const historicalPeriods = periods.filter(period => period.bucket === 'historical');
+  const historicalColor = '#7e8da6';
+  const forecastColor = '#c77b30';
+  const buildChartAnnotations = (idPrefix, valuesByLabel, { allowHistorical = true } = {}) => {
+    const historicalValue = calculateCagrFromRange(valuesByLabel, historicalPeriods, cagrSettings?.historical);
+    const forecastValue = calculateCagrFromRange(valuesByLabel, periods, cagrSettings?.forecast);
+    const annotations = [];
+
+    if (allowHistorical && Number.isFinite(historicalValue)) {
+      annotations.push({
+        idPrefix: `${idPrefix}-hist`,
+        range: cagrSettings?.historical,
+        valuesByLabel,
+        color: historicalColor,
+        label: historicalValue,
+      });
+    }
+
+    if (Number.isFinite(forecastValue)) {
+      annotations.push({
+        idPrefix: `${idPrefix}-forecast`,
+        range: cagrSettings?.forecast,
+        valuesByLabel,
+        color: forecastColor,
+        label: forecastValue,
+      });
+    }
+
+    return annotations;
+  };
 
   miniCharts.innerHTML = [
-    renderMiniChartCard('Revenue', 'Bars', revenueValues, currency, labels),
-    renderMiniChartCard('Gross Profit', 'Bars', grossProfitValues, currency, labels),
-    renderMiniChartCard('EBITDA', 'Bars', ebitdaValues, currency, labels),
+    renderMiniChartCard('Revenue', 'Bars', revenueValues, currency, labels, periods, buildChartAnnotations('revenue', revenueValuesByLabel)),
+    renderMiniChartCard('Gross Profit', 'Bars', grossProfitValues, currency, labels, periods, buildChartAnnotations('gross-profit', grossProfitValuesByLabel)),
+    renderMiniChartCard('EBITDA', 'Bars', ebitdaValues, currency, labels, periods, buildChartAnnotations('ebitda', ebitdaValuesByLabel, { allowHistorical: Number.isFinite(calculateCagrFromRange(ebitdaValuesByLabel, historicalPeriods, cagrSettings?.historical)) })),
   ].join('');
 }
 
@@ -2825,6 +3036,25 @@ function createSectionHeader(sectionKey, label, periods) {
   `;
 }
 
+function getSourceGroupConfig(periods, returnsResult) {
+  const historical = periods.filter(period => /A$/i.test(period.label) || period.bucket === 'historical');
+  const forecast = periods.filter(period => period.bucket === 'forecast');
+  const exit = periods.filter(period => period.bucket === 'exit');
+  const cimForecastLabels = new Set(
+    (returnsResult?.normalizedProfile?.forecastPeriods || [])
+      .map(period => period?.periodLabel)
+      .filter(Boolean)
+  );
+  const managementForecast = forecast.filter(period => cimForecastLabels.has(period.label));
+  const extrapolation = forecast.filter(period => !cimForecastLabels.has(period.label)).concat(exit);
+
+  return [
+    { label: 'CIM Historical', periods: historical },
+    { label: 'CIM Management Forecast', periods: managementForecast },
+    { label: 'Extrapolation', periods: extrapolation },
+  ].filter(group => group.periods.length);
+}
+
 function buildModelTableHeaders(periods, assumptions, returnsResult, cagrSettings) {
   const historical = periods.filter(period => period.bucket === 'historical');
   const forecast = periods.filter(period => period.bucket === 'forecast');
@@ -2832,10 +3062,19 @@ function buildModelTableHeaders(periods, assumptions, returnsResult, cagrSetting
   const context = getReturnsDisplayContext(returnsResult);
   const histLabel = cagrSettings?.historical?.label || 'Hist';
   const forecastLabel = cagrSettings?.forecast?.label || 'Forecast';
+  const sourceGroups = getSourceGroupConfig(periods, returnsResult);
 
   modelTableHead.innerHTML = `
+    <tr class="source-group-row">
+      <th class="left-col source-group-spacer" rowspan="3">$ in ${escapeHtml(getSourceUnitLabel(context.units) || context.units || '')}</th>
+      ${sourceGroups.map(group => `
+        <th class="source-group-cell" colspan="${group.periods.length}">
+          <div class="source-group-divider"><span>${escapeHtml(group.label)}</span></div>
+        </th>
+      `).join('')}
+      <th class="source-group-spacer" colspan="2"></th>
+    </tr>
     <tr>
-      <th class="left-col" rowspan="2">$ in ${escapeHtml(getSourceUnitLabel(context.units) || context.units || '')}</th>
       ${historical.length ? `<th colspan="${historical.length}">Historical</th>` : ''}
       ${forecast.length ? `<th colspan="${forecast.length}">Forecast</th>` : ''}
       ${exit.length ? `<th colspan="${exit.length}" class="exit-col">Exit</th>` : ''}
@@ -2913,7 +3152,7 @@ function renderFinancialProfile(cimResult, returnsResult) {
   const ebitdaValues = Object.fromEntries(periods.map(period => [period.label, period.ebitda]));
 
   buildModelTableHeaders(periods, assumptions, returnsResult, cagrSettings);
-  renderMiniCharts(cimResult, returnsResult, periods, { revenueValues, grossProfitValues, ebitdaValues });
+  renderMiniCharts(cimResult, returnsResult, periods, { revenueValues, grossProfitValues, ebitdaValues }, cagrSettings);
   const sgnaValues = Object.fromEntries(periods.map(period => [
     period.label,
     Number.isFinite(period.sgna)
