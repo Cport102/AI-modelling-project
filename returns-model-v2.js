@@ -792,15 +792,127 @@
     };
   }
 
-  function buildValueCreationBridge(assumptions, entry, exit) {
+  function buildValueCreationBridge(assumptions, entry, exit, warnings) {
+    const entryRevenue = entry.ntmRevenue;
+    const exitRevenue = exit.exitForwardRevenue;
+    const entryMargin = isFiniteNumber(entry.ntmRevenue) && entry.ntmRevenue !== 0 && isFiniteNumber(entry.ntmEbitda)
+      ? entry.ntmEbitda / entry.ntmRevenue
+      : null;
+    const exitMargin = exit.exitForwardMargin;
+
+    const components = [
+      {
+        key: 'revenueGrowth',
+        label: 'Revenue Growth',
+        value: roundCurrency(
+          isFiniteNumber(exitRevenue) && isFiniteNumber(entryRevenue) && isFiniteNumber(entryMargin)
+            ? (exitRevenue - entryRevenue) * entryMargin * assumptions.entryMultiple
+            : null
+        ),
+      },
+      {
+        key: 'marginExpansion',
+        label: 'Margin Expansion',
+        value: roundCurrency(
+          isFiniteNumber(exitMargin) && isFiniteNumber(entryMargin) && isFiniteNumber(exitRevenue)
+            ? (exitMargin - entryMargin) * exitRevenue * assumptions.entryMultiple
+            : null
+        ),
+      },
+      {
+        key: 'multipleExpansion',
+        label: 'Multiple Expansion',
+        value: roundCurrency(
+          isFiniteNumber(exit.finalYearEbitda)
+            ? exit.finalYearEbitda * (assumptions.exitMultiple - assumptions.entryMultiple)
+            : null
+        ),
+      },
+      {
+        key: 'cashFlow',
+        label: 'Cash Flow',
+        value: roundCurrency(
+          isFiniteNumber(exit.cashAtExit) && isFiniteNumber(entry.minimumCash) && isFiniteNumber(exit.debtAtExit) && isFiniteNumber(entry.debt)
+            ? (exit.cashAtExit - entry.minimumCash) - (exit.debtAtExit - entry.debt)
+            : null
+        ),
+      },
+      {
+        key: 'mep',
+        label: 'MEP',
+        value: roundCurrency(exit.mip),
+      },
+      {
+        key: 'fees',
+        label: 'Fees',
+        value: roundCurrency(-1 * ((entry.advisoryFees || 0) + (entry.financingFees || 0))),
+      },
+    ];
+
+    const entryEquity = roundCurrency(entry.pfEquity);
+    const exitEquity = roundCurrency(exit.pfEquityExit);
+    const bridgeSumBeforeAdjustment = components.reduce(
+      (sum, component) => sum + (isFiniteNumber(component.value) ? component.value : 0),
+      isFiniteNumber(entryEquity) ? entryEquity : 0
+    );
+    const roundingAdjustment = roundCurrency(
+      isFiniteNumber(exitEquity) ? exitEquity - bridgeSumBeforeAdjustment : null
+    );
+
+    if (isFiniteNumber(roundingAdjustment) && Math.abs(roundingAdjustment) > 1 && Array.isArray(warnings)) {
+      pushUnique(
+        warnings,
+        `Value creation bridge does not reconcile to exit equity within tolerance before adjustment (difference: ${roundCurrency(roundingAdjustment)}).`
+      );
+    }
+
+    const steps = [
+      {
+        key: 'entryEquity',
+        label: 'Entry Equity',
+        type: 'total',
+        value: entryEquity,
+      },
+      ...components.map(component => ({
+        ...component,
+        type: 'delta',
+      })),
+      {
+        key: 'exitEquity',
+        label: 'Exit Equity',
+        type: 'total',
+        value: exitEquity,
+      },
+    ];
+
+    let runningTotal = entryEquity;
+    for (const step of steps) {
+      if (step.type === 'total') {
+        step.start = 0;
+        step.end = step.value;
+        if (step.key === 'entryEquity') {
+          runningTotal = step.value;
+        } else if (step.key === 'exitEquity') {
+          runningTotal = step.value;
+        }
+        step.runningTotal = runningTotal;
+      } else {
+        step.start = runningTotal;
+        step.end = runningTotal + step.value;
+        runningTotal = step.end;
+        step.runningTotal = runningTotal;
+      }
+    }
+
     return {
-      initialSponsorEquity: roundCurrency(entry.pfEquity),
-      ebitdaGrowthEffect: roundCurrency((exit.finalYearEbitda - entry.ntmEbitda) * assumptions.entryMultiple),
-      multipleEffect: roundCurrency(exit.finalYearEbitda * (assumptions.exitMultiple - assumptions.entryMultiple)),
-      debtAndCashMovement: roundCurrency((exit.cashAtExit - entry.minimumCash) + (entry.debt - exit.debtAtExit)),
-      feesImpact: roundCurrency(-1 * (entry.advisoryFees + entry.financingFees)),
-      mipImpact: roundCurrency(exit.mip),
-      finalSponsorEquity: roundCurrency(exit.pfEquityExit),
+      entryEquity,
+      exitEquity,
+      entryRevenue: roundCurrency(entryRevenue),
+      exitRevenue: roundCurrency(exitRevenue),
+      entryMargin: roundRatio(entryMargin),
+      exitMargin: roundRatio(exitMargin),
+      discrepancyBeforeAdjustment: roundingAdjustment,
+      steps,
     };
   }
 
@@ -831,7 +943,7 @@
       const operatingProjection = buildOperatingProjection(validation.normalizedProfile, validation.resolvedAssumptions, entry, warnings);
       const exit = buildExit(validation.normalizedProfile, validation.resolvedAssumptions, entry, operatingProjection[operatingProjection.length - 1], warnings);
       const returns = buildReturns(validation.resolvedAssumptions, entry, exit);
-      const valueCreationBridge = buildValueCreationBridge(validation.resolvedAssumptions, entry, exit);
+      const valueCreationBridge = buildValueCreationBridge(validation.resolvedAssumptions, entry, exit, warnings);
 
       return {
         normalizedProfile: validation.normalizedProfile,

@@ -324,6 +324,30 @@ run('exit multiple uses the forward year and extrapolates beyond the CIM forecas
   assert.ok(result.validation.warnings.some(message => message.includes('Fiscal year 2031 was extrapolated')));
 });
 
+run('value creation bridge reconciles entry equity to exit equity within rounding tolerance', () => {
+  const result = calculateReturns(buildSampleExtraction(), {
+    entryDate: '2026-01-01',
+    fiscalYearEndMonth: 6,
+    entryMultiple: 8,
+    exitMultiple: 9,
+    leverage: 4.5,
+    holdYears: 5,
+    pretaxUfcfConversion: 50,
+  });
+
+  const bridge = result.valueCreationBridge;
+  assert.ok(bridge);
+  assert.ok(Array.isArray(bridge.steps));
+
+  const entryStep = bridge.steps.find(step => step.key === 'entryEquity');
+  const exitStep = bridge.steps.find(step => step.key === 'exitEquity');
+  const deltaSum = bridge.steps
+    .filter(step => step.type === 'delta')
+    .reduce((sum, step) => sum + step.value, 0);
+
+  nearlyEqual(entryStep.value + deltaSum, exitStep.value, 1.0);
+});
+
 run('non-positive LTM EBITDA floors debt and default minimum cash at zero', () => {
   const extraction = buildSampleExtraction();
   extraction.structured.historical_years[1].ebitda = -5;

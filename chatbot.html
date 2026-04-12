@@ -816,6 +816,45 @@
       font-size: 15px;
     }
 
+    .equity-bridge {
+      display: none;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: var(--surface);
+      padding: 14px 16px 16px;
+    }
+
+    .equity-bridge.visible {
+      display: grid;
+      gap: 12px;
+    }
+
+    .equity-bridge-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .equity-bridge-header strong {
+      font-size: 15px;
+      color: var(--text);
+    }
+
+    .equity-bridge-header span {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .equity-bridge svg {
+      width: 100%;
+      height: 290px;
+      display: block;
+      overflow: visible;
+    }
+
     .header-chip {
       display: block;
       font-size: 10px;
@@ -1419,6 +1458,10 @@
 
             <div id="mini-charts" class="mini-charts"></div>
 
+            <div id="returns-strip" class="returns-strip"></div>
+
+            <div id="equity-bridge" class="equity-bridge"></div>
+
             <div class="model-table-wrap">
               <table id="model-table" class="model-table">
                 <thead id="model-table-head"></thead>
@@ -1457,8 +1500,6 @@
                 </div>
               </div>
             </div>
-
-            <div id="returns-strip" class="returns-strip"></div>
           </div>
         </div>
       </div>
@@ -1523,6 +1564,7 @@ const financialProfile = $('financial-profile');
 const returnsRunBtn = $('returns-run-btn');
 const downloadExcelBtn = $('download-excel-btn');
 const miniCharts = $('mini-charts');
+const equityBridge = $('equity-bridge');
 const modelTableHead = $('model-table-head');
 const modelTableBody = $('model-table-body');
 const returnsStrip = $('returns-strip');
@@ -1730,6 +1772,8 @@ function resetReturnsResults() {
   returnsModelResult = null;
   financialProfile.classList.remove('visible');
   miniCharts.innerHTML = '';
+  equityBridge.innerHTML = '';
+  equityBridge.classList.remove('visible');
   modelTableHead.innerHTML = '';
   modelTableBody.innerHTML = '';
   returnsStrip.innerHTML = '';
@@ -1747,6 +1791,8 @@ function captureFinancialProfileSnapshot() {
   return {
     visible: financialProfile.classList.contains('visible'),
     miniChartsHtml: miniCharts.innerHTML,
+    equityBridgeHtml: equityBridge.innerHTML,
+    equityBridgeVisible: equityBridge.classList.contains('visible'),
     modelTableHeadHtml: modelTableHead.innerHTML,
     modelTableBodyHtml: modelTableBody.innerHTML,
     returnsStripHtml: returnsStrip.innerHTML,
@@ -1756,6 +1802,8 @@ function captureFinancialProfileSnapshot() {
 function restoreFinancialProfileSnapshot(snapshot) {
   if (!snapshot) return;
   miniCharts.innerHTML = snapshot.miniChartsHtml || '';
+  equityBridge.innerHTML = snapshot.equityBridgeHtml || '';
+  equityBridge.classList.toggle('visible', Boolean(snapshot.equityBridgeVisible));
   modelTableHead.innerHTML = snapshot.modelTableHeadHtml || '';
   modelTableBody.innerHTML = snapshot.modelTableBodyHtml || '';
   returnsStrip.innerHTML = snapshot.returnsStripHtml || '';
@@ -2858,6 +2906,92 @@ function renderMiniCharts(cimResult, returnsResult, periods, seriesOverrides = {
   ].join('');
 }
 
+function getBridgeLabelLines(label) {
+  const words = String(label || '').split(/\s+/).filter(Boolean);
+  if (words.length <= 1) return [label];
+  if (words.length === 2) return words;
+  return [words.slice(0, Math.ceil(words.length / 2)).join(' '), words.slice(Math.ceil(words.length / 2)).join(' ')];
+}
+
+function renderEquityBridge(result) {
+  const bridge = result?.valueCreationBridge;
+  const steps = Array.isArray(bridge?.steps) ? bridge.steps : [];
+  const currency = result?.normalizedProfile?.currency || '$';
+  const units = getSourceUnitLabel(result?.normalizedProfile?.sourceUnits || 'ones');
+
+  if (!steps.length) {
+    equityBridge.innerHTML = '';
+    equityBridge.classList.remove('visible');
+    return;
+  }
+
+  const width = Math.max(760, steps.length * 110);
+  const height = 290;
+  const paddingTop = 30;
+  const paddingRight = 18;
+  const paddingBottom = 76;
+  const paddingLeft = 18;
+  const plotHeight = height - paddingTop - paddingBottom;
+  const chartWidth = width - paddingLeft - paddingRight;
+  const stepGap = 18;
+  const barWidth = Math.max((chartWidth - (stepGap * (steps.length - 1))) / steps.length, 36);
+  const minValue = Math.min(0, ...steps.flatMap(step => [step.start ?? 0, step.end ?? step.value ?? 0]));
+  const maxValue = Math.max(0, ...steps.flatMap(step => [step.start ?? 0, step.end ?? step.value ?? 0]));
+  const valueRange = Math.max(maxValue - minValue, 1);
+  const baselineY = paddingTop + ((maxValue - 0) / valueRange) * plotHeight;
+  const scaleY = (value) => paddingTop + ((maxValue - value) / valueRange) * plotHeight;
+  const bars = [];
+  const valueLabels = [];
+  const axisLabels = [];
+
+  for (let index = 0; index < steps.length; index += 1) {
+    const step = steps[index];
+    const x = paddingLeft + index * (barWidth + stepGap);
+    const startValue = Number(step.start ?? 0);
+    const endValue = Number(step.end ?? step.value ?? 0);
+    const y1 = scaleY(startValue);
+    const y2 = scaleY(endValue);
+    const rectY = Math.min(y1, y2);
+    const rectHeight = Math.max(Math.abs(y2 - y1), 2);
+    const isTotal = step.type === 'total';
+    const isPositive = Number(step.value) >= 0;
+    const fill = isTotal
+      ? '#111111'
+      : isPositive
+        ? '#16a34a'
+        : '#dc2626';
+
+    bars.push(`<rect x="${x}" y="${rectY}" width="${barWidth}" height="${rectHeight}" rx="8" fill="${fill}"></rect>`);
+
+    const scaledValue = scaleReturnValue(step.value, result);
+    const labelY = Number(step.value) >= 0 ? rectY - 8 : rectY + rectHeight + 14;
+    valueLabels.push(
+      `<text x="${x + (barWidth / 2)}" y="${labelY}" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">${escapeHtml(formatModelMoney(scaledValue, currency))}</text>`
+    );
+
+    const lines = getBridgeLabelLines(step.label);
+    axisLabels.push(`
+      <text x="${x + (barWidth / 2)}" y="${height - 30}" text-anchor="middle" font-size="10.5" fill="var(--text-muted)">
+        ${lines.map((line, lineIndex) => `<tspan x="${x + (barWidth / 2)}" dy="${lineIndex === 0 ? 0 : 12}">${escapeHtml(line)}</tspan>`).join('')}
+      </text>
+    `);
+  }
+
+  equityBridge.innerHTML = `
+    <div class="equity-bridge-header">
+      <strong>Equity Bridge</strong>
+      <span>${escapeHtml(currency === 'USD' ? '$' : currency)}${units ? ` in ${units}` : ''}</span>
+    </div>
+    <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="Equity Bridge waterfall chart">
+      <line x1="${paddingLeft}" y1="${baselineY}" x2="${width - paddingRight}" y2="${baselineY}" stroke="var(--border)" stroke-width="1"></line>
+      ${bars.join('')}
+      ${valueLabels.join('')}
+      ${axisLabels.join('')}
+    </svg>
+  `;
+  equityBridge.classList.add('visible');
+}
+
 function buildFinancialDisplayPeriods(returnsResult) {
   const periods = new Map();
   const normalizedProfile = returnsResult?.normalizedProfile || {};
@@ -3258,6 +3392,8 @@ function renderFinancialProfile(cimResult, returnsResult) {
       <strong>${escapeHtml(value)}</strong>
     </div>
   `).join('');
+
+  renderEquityBridge(returnsResult);
 }
 
 function runReturnsModel() {
