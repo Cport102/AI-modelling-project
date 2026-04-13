@@ -180,12 +180,25 @@ function parseRetryAfterSeconds(value) {
   return Math.max(0, Math.ceil((retryDate - Date.now()) / 1000));
 }
 
+function isTemporaryGeminiError(status, body) {
+  const normalizedBody = String(body || '').toLowerCase();
+  return (
+    status === 429 ||
+    status === 500 ||
+    status === 503 ||
+    normalizedBody.includes('timed out') ||
+    normalizedBody.includes('try again') ||
+    normalizedBody.includes('unavailable') ||
+    normalizedBody.includes('high demand')
+  );
+}
+
 async function requestExtractionWithRetries({ apiKey, uploadedFile }) {
   const models = [EXTRACTION_MODEL, ...EXTRACTION_MODEL_FALLBACKS.filter((model) => model !== EXTRACTION_MODEL)];
   let lastTemporaryError = null;
 
   for (const model of models) {
-    for (let attempt = 1; attempt <= 3; attempt += 1) {
+    for (let attempt = 1; attempt <= 5; attempt += 1) {
       const generationResponse = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
         {
@@ -225,7 +238,7 @@ async function requestExtractionWithRetries({ apiKey, uploadedFile }) {
       }
 
       const body = await generationResponse.text();
-      const isTemporary = generationResponse.status === 503 || generationResponse.status === 429;
+      const isTemporary = isTemporaryGeminiError(generationResponse.status, body);
 
       if (!isTemporary) {
         throw new Error(`Gemini extraction failed: ${body || generationResponse.status}`);
@@ -234,10 +247,10 @@ async function requestExtractionWithRetries({ apiKey, uploadedFile }) {
       lastTemporaryError = body || String(generationResponse.status);
       const retryAfterSeconds = parseRetryAfterSeconds(generationResponse.headers.get('retry-after'));
 
-      if (attempt < 3) {
+      if (attempt < 5) {
         const backoffMs = retryAfterSeconds
           ? retryAfterSeconds * 1000
-          : Math.min(1500 * 2 ** (attempt - 1), 6000);
+          : Math.min(2000 * 2 ** (attempt - 1), 12000);
         await sleep(backoffMs);
       }
     }
